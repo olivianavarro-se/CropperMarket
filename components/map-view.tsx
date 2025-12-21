@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { SupplierCard } from "@/components/supplier-card"
 import type { Supplier, Inventory } from "@/lib/types"
 
@@ -10,63 +10,213 @@ interface SupplierWithInventory extends Supplier {
 
 interface MapViewProps {
   suppliers: SupplierWithInventory[]
+  isAuthenticated?: boolean
+  userLocation?: { lat: number; lng: number } | null
+  selectedSupplier?: SupplierWithInventory | null
+  onSupplierSelect?: (supplier: SupplierWithInventory | null) => void
 }
 
-export function MapView({ suppliers }: MapViewProps) {
-  const [selectedSupplier, setSelectedSupplier] = useState<SupplierWithInventory | null>(null)
+const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
+
+export function MapView({
+  suppliers,
+  isAuthenticated = false,
+  userLocation,
+  selectedSupplier,
+  onSupplierSelect,
+}: MapViewProps) {
   const [map, setMap] = useState<any | null>(null)
   const [markers, setMarkers] = useState<any[]>([])
   const [mapsLoaded, setMapsLoaded] = useState(false)
+  const [mapsError, setMapsError] = useState<string | null>(null)
+  const [useAdvancedMarkers, setUseAdvancedMarkers] = useState(true)
+  const isListSelection = useRef(false)
+  const initialLocationSet = useRef(false)
+  const prevUserLocation = useRef<{ lat: number; lng: number } | null>(null)
+  const prevSuppliersCount = useRef<number>(suppliers.length)
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "CROPPER_MAP_ID"
+
+  useEffect(() => {
+    if (!map || !mapsLoaded || !userLocation) return
+
+    const isNewLocation =
+      !prevUserLocation.current ||
+      prevUserLocation.current.lat !== userLocation.lat ||
+      prevUserLocation.current.lng !== userLocation.lng
+
+    if (isNewLocation) {
+      console.log("[v0] User location detected, panning to:", userLocation)
+
+      map.panTo(userLocation)
+      map.setZoom(10)
+
+      prevUserLocation.current = userLocation
+    }
+  }, [map, mapsLoaded, userLocation])
+
+  useEffect(() => {
+    if (!map || !mapsLoaded || suppliers.length === 0) return
+
+    const suppliersWithLocation = suppliers.filter((s) => s.latitude && s.longitude)
+    if (suppliersWithLocation.length === 0) {
+      map.panTo(userLocation)
+      map.setZoom(10)
+      initialLocationSet.current = true
+    }
+  }, [map, mapsLoaded, userLocation, suppliers])
+
+  useEffect(() => {
+    if (!map || !mapsLoaded || suppliers.length === 0) return
+
+    const suppliersChanged = prevSuppliersCount.current !== suppliers.length
+    prevSuppliersCount.current = suppliers.length
+
+    const delay = suppliersChanged ? 0 : 100
+
+    const timeoutId = setTimeout(() => {
+      const suppliersWithLocation = suppliers.filter((supplier) => {
+        const hasLatLng = !!(supplier.latitude && supplier.longitude)
+        return hasLatLng
+      })
+
+      if (suppliersWithLocation.length === 0) return
+
+      console.log("[v0] Auto-zooming map to fit", suppliersWithLocation.length, "suppliers")
+
+      const bounds = new window.google.maps.LatLngBounds()
+      suppliersWithLocation.forEach((supplier) => {
+        bounds.extend({ lat: Number(supplier.latitude), lng: Number(supplier.longitude) })
+      })
+
+      map.fitBounds(bounds)
+
+      const padding = { top: 50, right: 50, bottom: 50, left: 350 }
+      map.fitBounds(bounds, padding)
+
+      window.google.maps.event.addListenerOnce(map, "bounds_changed", () => {
+        const currentZoom = map.getZoom()
+        const markerCount = suppliersWithLocation.length
+
+        if (markerCount === 1) {
+          if (currentZoom > 12) map.setZoom(12)
+          else if (currentZoom < 10) map.setZoom(10)
+        } else {
+          if (currentZoom < 8) {
+            map.setZoom(8)
+          } else if (currentZoom > 11) {
+            map.setZoom(11)
+          }
+        }
+      })
+    }, delay)
+
+    return () => clearTimeout(timeoutId)
+  }, [suppliers, map, mapsLoaded])
 
   useEffect(() => {
     if (!mapsApiKey || suppliers.length === 0) return
 
-    const initMap = () => {
-      if (!window.google?.maps?.Map || !window.google?.maps?.marker?.AdvancedMarkerElement) {
-        console.log("[v0] Google Maps not fully loaded yet, retrying...")
+    const initMap = async () => {
+      if (!window.google?.maps?.Map) {
         setTimeout(initMap, 100)
         return
       }
 
-      console.log("[v0] Google Maps fully loaded, creating map...")
-      setMapsLoaded(true)
+      try {
+        setMapsLoaded(true)
+        setMapsError(null)
 
-      const mapInstance = new window.google.maps.Map(document.getElementById("map") as HTMLElement, {
-        center: { lat: 32.2226, lng: -110.9747 }, // Tucson, Arizona
-        zoom: 10,
-        mapId: "CROPPER_MAP_ID", // Required for AdvancedMarkerElement
-      })
+        const initialCenter = userLocation || DEFAULT_CENTER
 
-      setMap(mapInstance)
+        let mapInstance
+        let AdvancedMarkerElement
 
-      const newMarkers = suppliers
-        .filter((supplier) => supplier.latitude && supplier.longitude)
-        .map((supplier) => {
-          const markerElement = document.createElement("div")
-          markerElement.style.width = "24px"
-          markerElement.style.height = "24px"
-          markerElement.style.borderRadius = "50%"
-          markerElement.style.backgroundColor = supplier.supplier_type === "broker" ? "#16a34a" : "#ca8a04"
-          markerElement.style.border = "3px solid white"
-          markerElement.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)"
-          markerElement.style.cursor = "pointer"
+        if (mapId && useAdvancedMarkers) {
+          try {
+            const markerLibrary = (await window.google.maps.importLibrary("marker")) as any
+            AdvancedMarkerElement = markerLibrary.AdvancedMarkerElement
 
-          const marker = new window.google.maps.marker.AdvancedMarkerElement({
-            map: mapInstance,
-            position: { lat: Number(supplier.latitude), lng: Number(supplier.longitude) },
-            content: markerElement,
-            title: supplier.business_name,
+            mapInstance = new window.google.maps.Map(document.getElementById("map") as HTMLElement, {
+              center: initialCenter,
+              zoom: 10,
+              mapId: mapId,
+            })
+          } catch (error: any) {
+            console.warn("[v0] Failed to initialize advanced markers, falling back to standard markers:", error)
+            setUseAdvancedMarkers(false)
+            // Fall through to standard map initialization
+          }
+        }
+
+        if (!mapInstance) {
+          mapInstance = new window.google.maps.Map(document.getElementById("map") as HTMLElement, {
+            center: initialCenter,
+            zoom: 10,
           })
+        }
+
+        setMap(mapInstance)
+
+        const suppliersWithLocation = suppliers.filter((supplier) => {
+          const hasAddress = !!(supplier.address && supplier.city && supplier.state)
+          const hasLatLng = !!(supplier.latitude && supplier.longitude)
+          const hasInventory = supplier.inventory && supplier.inventory.length > 0
+          return hasAddress && hasInventory && hasLatLng
+        })
+
+        const newMarkers = suppliersWithLocation.map((supplier) => {
+          const position = { lat: Number(supplier.latitude), lng: Number(supplier.longitude) }
+
+          let marker
+
+          if (AdvancedMarkerElement && useAdvancedMarkers) {
+            const markerDiv = document.createElement("div")
+            markerDiv.style.width = "20px"
+            markerDiv.style.height = "20px"
+            markerDiv.style.borderRadius = "50%"
+            markerDiv.style.backgroundColor = supplier.supplier_type === "broker" ? "#16a34a" : "#ca8a04"
+            markerDiv.style.border = "3px solid white"
+            markerDiv.style.boxShadow = "0 2px 6px rgba(0,0,0,0.3)"
+            markerDiv.style.cursor = "pointer"
+
+            marker = new AdvancedMarkerElement({
+              map: mapInstance,
+              position,
+              content: markerDiv,
+              title: supplier.business_name,
+            })
+          } else {
+            marker = new window.google.maps.Marker({
+              map: mapInstance,
+              position,
+              title: supplier.business_name,
+              icon: {
+                path: window.google.maps.SymbolPath.CIRCLE,
+                fillColor: supplier.supplier_type === "broker" ? "#16a34a" : "#ca8a04",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 3,
+                scale: 10,
+              },
+            })
+          }
 
           marker.addListener("click", () => {
-            setSelectedSupplier(supplier)
+            onSupplierSelect?.(supplier)
+            mapInstance.panTo(position)
+            mapInstance.setZoom(13)
           })
 
           return marker
         })
 
-      setMarkers(newMarkers)
+        setMarkers(newMarkers)
+      } catch (error) {
+        console.error("Maps initialization error:", error)
+        setMapsError("Failed to initialize map")
+        setMapsLoaded(false)
+      }
     }
 
     if (!window.google?.maps) {
@@ -79,12 +229,13 @@ export function MapView({ suppliers }: MapViewProps) {
       }
 
       const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=marker&callback=initGoogleMaps`
+      const libraries = mapId && useAdvancedMarkers ? "marker" : ""
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}${libraries ? `&libraries=${libraries}` : ""}&loading=async`
       script.async = true
       script.defer = true
-      ;(window as any).initGoogleMaps = () => {
-        console.log("[v0] Google Maps callback fired")
-        initMap()
+      script.onload = initMap
+      script.onerror = () => {
+        setMapsError("Failed to load Google Maps")
       }
 
       document.head.appendChild(script)
@@ -93,84 +244,60 @@ export function MapView({ suppliers }: MapViewProps) {
     }
 
     return () => {
-      markers.forEach((marker) => (marker.map = null))
+      markers.forEach((marker) => {
+        if (marker.map) marker.map = null
+      })
     }
-  }, [suppliers, mapsApiKey])
+  }, [suppliers, mapsApiKey, mapId, userLocation, useAdvancedMarkers, onSupplierSelect])
 
-  if (!mapsApiKey) {
+  useEffect(() => {
+    if (!map || !mapsLoaded || !selectedSupplier || !isListSelection.current) return
+
+    const lat = Number(selectedSupplier.latitude)
+    const lng = Number(selectedSupplier.longitude)
+
+    if (lat && lng) {
+      map.panTo({ lat, lng })
+      map.setZoom(13)
+    }
+
+    isListSelection.current = false
+  }, [selectedSupplier, map, mapsLoaded])
+
+  if (!mapsApiKey || mapsError) {
     return (
-      <div className="flex h-full">
-        <div className="w-[450px] border-r border-gray-200 bg-white overflow-y-auto">
-          <div className="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-            <h2 className="text-xl font-bold text-gray-900">
-              {suppliers.length} {suppliers.length === 1 ? "Supplier" : "Suppliers"}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">Configure Google Maps API key to see map view</p>
-
-            <div className="flex gap-4 mt-3">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-600"></div>
-                <span className="text-xs font-medium">Broker</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-600"></div>
-                <span className="text-xs font-medium">Grower</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 space-y-3">
-            {suppliers.length === 0 ? (
-              <div className="text-center text-gray-500 py-12">
-                No suppliers available yet. Sign up as a supplier to list your products!
-              </div>
-            ) : (
-              suppliers.map((supplier) => (
-                <button
-                  key={supplier.id}
-                  onClick={() => setSelectedSupplier(supplier)}
-                  className={`w-full p-4 border rounded-lg hover:shadow-md transition-all text-left ${
-                    selectedSupplier?.id === supplier.id ? "border-green-600 bg-green-50" : "border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="font-semibold text-base text-gray-900">{supplier.business_name}</div>
-                    <div
-                      className={`w-3 h-3 rounded-full shrink-0 mt-1 ${
-                        supplier.supplier_type === "broker" ? "bg-green-600" : "bg-yellow-600"
-                      }`}
-                    />
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize mb-2">
-                    {supplier.supplier_type === "broker" ? "Broker • Grow + Deliver" : "Grower • Grow Only"}
-                  </div>
-                  {(supplier.city || supplier.state) && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      {supplier.city}
-                      {supplier.state && `, ${supplier.state}`}
-                    </div>
-                  )}
-                  {supplier.description && (
-                    <div className="text-sm text-gray-600 mt-2 line-clamp-2">{supplier.description}</div>
-                  )}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1 relative bg-gradient-to-br from-green-50 to-yellow-50">
-          {selectedSupplier ? (
-            <div className="p-6 overflow-y-auto h-full">
-              <SupplierCard supplier={selectedSupplier} onClose={() => setSelectedSupplier(null)} />
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center p-8">
-                <div className="text-6xl mb-4">🗺️</div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">Map View Available</h3>
-                <p className="text-gray-600">Add Google Maps API key to see interactive map</p>
-              </div>
+      <div className="flex h-full items-center justify-center bg-gray-50">
+        <div className="text-center p-8">
+          <div className="text-6xl mb-4">🗺️</div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">Map Configuration Needed</h3>
+          <p className="text-gray-600 mb-4">Google Maps API is not available</p>
+          {mapsError && (
+            <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left max-w-md mx-auto">
+              <p className="text-sm text-yellow-900 font-semibold mb-2">⚠️ Configuration Required</p>
+              <ol className="text-xs text-yellow-800 space-y-2 list-decimal list-inside">
+                <li>
+                  Verify billing:{" "}
+                  <a
+                    href="https://console.cloud.google.com/billing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Check billing
+                  </a>
+                </li>
+                <li>
+                  Enable API:{" "}
+                  <a
+                    href="https://console.cloud.google.com/apis/library/maps-backend.googleapis.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    Enable
+                  </a>
+                </li>
+              </ol>
             </div>
           )}
         </div>
@@ -179,77 +306,18 @@ export function MapView({ suppliers }: MapViewProps) {
   }
 
   return (
-    <div className="flex h-full">
-      <div className="w-[450px] border-r bg-gradient-to-b from-white to-gray-50/50 overflow-y-auto shadow-lg">
-        <div className="p-6 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {suppliers.length} {suppliers.length === 1 ? "Supplier" : "Suppliers"}
-          </h2>
-          <p className="text-sm text-gray-600 mt-1">Configure Google Maps API key to see map view</p>
+    <div className="relative h-full">
+      <div id="map" className="w-full h-full" />
 
-          <div className="flex gap-3 mt-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-100">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-green-900">Broker</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 rounded-full border border-yellow-100">
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-yellow-900">Grower</span>
-            </div>
-          </div>
+      {selectedSupplier && (
+        <div className="absolute top-4 right-4 w-[420px] max-h-[calc(100vh-120px)] overflow-y-auto z-10">
+          <SupplierCard
+            supplier={selectedSupplier}
+            onClose={() => onSupplierSelect?.(null)}
+            isAuthenticated={isAuthenticated}
+          />
         </div>
-
-        <div className="p-4 space-y-3">
-          {suppliers.length === 0 ? (
-            <div className="text-center text-gray-500 py-12">
-              No suppliers available yet. Sign up as a supplier to list your products!
-            </div>
-          ) : (
-            suppliers.map((supplier) => (
-              <button
-                key={supplier.id}
-                onClick={() => setSelectedSupplier(supplier)}
-                className={`w-full p-4 border rounded-xl hover:shadow-lg transition-all duration-200 text-left ${
-                  selectedSupplier?.id === supplier.id
-                    ? "border-green-500 bg-gradient-to-br from-green-50 to-green-100/50 shadow-md"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="font-semibold text-base text-gray-900">{supplier.business_name}</div>
-                  <div
-                    className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
-                      supplier.supplier_type === "broker" ? "bg-green-600" : "bg-yellow-600"
-                    }`}
-                  />
-                </div>
-                <div className="text-sm text-gray-600 capitalize mb-2">
-                  {supplier.supplier_type === "broker" ? "Broker • Grow + Deliver" : "Grower • Grow Only"}
-                </div>
-                {(supplier.city || supplier.state) && (
-                  <div className="text-sm text-gray-600 mb-2">
-                    {supplier.city}
-                    {supplier.state && `, ${supplier.state}`}
-                  </div>
-                )}
-                {supplier.description && (
-                  <div className="text-sm text-gray-600 mt-2 line-clamp-2">{supplier.description}</div>
-                )}
-              </button>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div className="flex-1 relative">
-        <div id="map" className="w-full h-full" />
-
-        {selectedSupplier && (
-          <div className="absolute top-4 right-4 w-96 max-h-[calc(100vh-120px)] overflow-y-auto z-10">
-            <SupplierCard supplier={selectedSupplier} onClose={() => setSelectedSupplier(null)} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   )
 }

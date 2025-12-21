@@ -17,7 +17,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
   const [fullName, setFullName] = useState("")
-  const [userType, setUserType] = useState<"public" | "supplier">("public")
+  const [userType, setUserType] = useState<"grower" | "broker" | "buyer">("buyer")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -95,13 +95,17 @@ export default function SignUpPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="user-type">Account Type</Label>
-                    <Select value={userType} onValueChange={(value: "public" | "supplier") => setUserType(value)}>
+                    <Select
+                      value={userType}
+                      onValueChange={(value: "grower" | "broker" | "buyer") => setUserType(value)}
+                    >
                       <SelectTrigger id="user-type">
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="public">Public User</SelectItem>
-                        <SelectItem value="supplier">Supplier (Broker/Grower)</SelectItem>
+                        <SelectItem value="buyer">Buyer</SelectItem>
+                        <SelectItem value="broker">Broker</SelectItem>
+                        <SelectItem value="grower">Grower</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

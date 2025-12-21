@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
-import { HomeMapView } from "@/components/home-map-view"
+import { SearchInterface } from "@/components/search-interface"
 
-export default async function Home() {
+export default async function SearchPage() {
   const supabase = await createClient()
 
   const {
@@ -38,10 +38,10 @@ export default async function Home() {
   const suppliersWithInventory = suppliers?.filter((supplier) => supplier.inventory && supplier.inventory.length > 0)
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50">
       <Header />
-      <main className="flex-1 relative">
-        <HomeMapView suppliers={suppliersWithInventory || []} isAuthenticated={isAuthenticated} />
+      <main className="flex-1">
+        <SearchInterface suppliers={suppliersWithInventory || []} isAuthenticated={isAuthenticated} />
       </main>
     </div>
   )

@@ -1,10 +1,12 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { X, Phone, MapPin, Package, Mail } from "lucide-react"
+import { X, Phone, MapPin, Package, Mail, Lock } from "lucide-react"
 import type { Supplier, Inventory } from "@/lib/types"
+import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 
 interface SupplierWithInventory extends Supplier {
   inventory: Inventory[]
@@ -13,10 +15,20 @@ interface SupplierWithInventory extends Supplier {
 interface SupplierCardProps {
   supplier: SupplierWithInventory
   onClose: () => void
+  isAuthenticated?: boolean
 }
 
-export function SupplierCard({ supplier, onClose }: SupplierCardProps) {
+export function SupplierCard({ supplier, onClose, isAuthenticated = false }: SupplierCardProps) {
+  const router = useRouter()
   const hasDelivery = supplier.inventory.some((item) => item.delivery_available)
+
+  const handleContactClick = () => {
+    if (!isAuthenticated) {
+      router.push("/auth/login")
+    } else if (supplier.email) {
+      window.location.href = `mailto:${supplier.email}?subject=Inquiry about ${supplier.business_name}`
+    }
+  }
 
   return (
     <Card className="shadow-2xl border-0 overflow-hidden">
@@ -41,27 +53,48 @@ export function SupplierCard({ supplier, onClose }: SupplierCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-4">
         {supplier.description && <p className="text-sm text-gray-600">{supplier.description}</p>}
 
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <MapPin className="h-4 w-4" />
-          <span>
-            {supplier.latitude.toFixed(4)}, {supplier.longitude.toFixed(4)}
-          </span>
+        <div className="flex items-start gap-2 text-sm">
+          <MapPin className="h-4 w-4 mt-0.5 text-green-600 shrink-0" />
+          <div className="flex flex-col text-gray-700 leading-relaxed">
+            {supplier.address && <span className="font-medium">{supplier.address}</span>}
+            {(supplier.city || supplier.state || supplier.zip_code) && (
+              <span>
+                {supplier.city}
+                {supplier.state && `, ${supplier.state}`}
+                {supplier.zip_code && ` ${supplier.zip_code}`}
+              </span>
+            )}
+          </div>
         </div>
 
-        {supplier.email && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Mail className="h-4 w-4" />
-            <span>{supplier.email}</span>
+        {isAuthenticated ? (
+          supplier.email && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Mail className="h-4 w-4" />
+              <span>{supplier.email}</span>
+            </div>
+          )
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded">
+            <Lock className="h-4 w-4" />
+            <span className="italic">Sign in to view contact information</span>
           </div>
         )}
 
-        {supplier.phone && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Phone className="h-4 w-4" />
-            <span>{supplier.phone}</span>
+        {isAuthenticated ? (
+          supplier.phone && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Phone className="h-4 w-4" />
+              <span>{supplier.phone}</span>
+            </div>
+          )
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded">
+            <Lock className="h-4 w-4" />
+            <span className="italic">Sign in to view phone number</span>
           </div>
         )}
 
@@ -81,13 +114,13 @@ export function SupplierCard({ supplier, onClose }: SupplierCardProps) {
                   <div className="flex-1">
                     <div className="font-medium text-sm">{item.product_name}</div>
                     <div className="text-xs text-gray-600">
-                      {item.quantity} {item.unit}
+                      {item.quantity} {getStockUnitLabel(item.stock_unit || "tons")} in stock
                       {item.delivery_available && " • Delivery available"}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-semibold text-green-700">${item.price_per_unit}</div>
-                    <div className="text-xs text-gray-500">per {item.unit === "tons" ? "ton" : "bale"}</div>
+                    <div className="text-xs text-gray-500">{getSellingUnitLabel(item.selling_unit || "tons")}</div>
                   </div>
                 </div>
               ))}
@@ -97,10 +130,21 @@ export function SupplierCard({ supplier, onClose }: SupplierCardProps) {
           )}
         </div>
 
-        <Button className="w-full shadow-md hover:shadow-lg transition-all" asChild disabled={!supplier.email}>
-          <a href={supplier.email ? `mailto:${supplier.email}?subject=Inquiry about ${supplier.business_name}` : "#"}>
-            {supplier.email ? "Contact Supplier" : "No Contact Email"}
-          </a>
+        <Button
+          className="w-full shadow-md hover:shadow-lg transition-all"
+          onClick={handleContactClick}
+          disabled={!supplier.email && isAuthenticated}
+        >
+          {!isAuthenticated ? (
+            <>
+              <Lock className="w-4 h-4 mr-2" />
+              Sign In to Contact Supplier
+            </>
+          ) : supplier.email ? (
+            "Contact Supplier"
+          ) : (
+            "No Contact Email"
+          )}
         </Button>
       </CardContent>
     </Card>

@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
-import type { Inventory } from "@/lib/types"
+import type { Inventory, StockUnit, SellingUnit } from "@/lib/types"
+import { HAY_TYPES } from "@/lib/hay-types"
 
 interface InventoryItemEditProps {
   item: Inventory
@@ -19,9 +20,13 @@ interface InventoryItemEditProps {
 }
 
 export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
+  const isCustomType = !HAY_TYPES.includes(item.product_name as any)
+  const [hayType, setHayType] = useState<string>(isCustomType ? "Other" : item.product_name)
+  const [customHayType, setCustomHayType] = useState(isCustomType ? item.product_name : "")
   const [productName, setProductName] = useState(item.product_name)
   const [quantity, setQuantity] = useState(item.quantity.toString())
-  const [unit, setUnit] = useState(item.unit)
+  const [stockUnit, setStockUnit] = useState<StockUnit>(item.stock_unit || "tons")
+  const [sellingUnit, setSellingUnit] = useState<SellingUnit>(item.selling_unit || "tons")
   const [pricePerUnit, setPricePerUnit] = useState(item.price_per_unit.toString())
   const [deliveryAvailable, setDeliveryAvailable] = useState(item.delivery_available)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,15 +38,18 @@ export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
     setIsLoading(true)
     setError(null)
 
+    const finalProductName = hayType === "Other" ? customHayType : hayType
+
     const supabase = createClient()
 
     try {
       const { error } = await supabase
         .from("inventory")
         .update({
-          product_name: productName,
+          product_name: finalProductName,
           quantity: Number.parseFloat(quantity),
-          unit,
+          stock_unit: stockUnit,
+          selling_unit: sellingUnit,
           price_per_unit: Number.parseFloat(pricePerUnit),
           delivery_available: deliveryAvailable,
           updated_at: new Date().toISOString(),
@@ -64,51 +72,92 @@ export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
       <CardContent className="pt-6">
         <form onSubmit={handleSave} className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor={`edit-product-name-${item.id}`}>Product Name</Label>
-            <Input
-              id={`edit-product-name-${item.id}`}
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              required
-            />
+            <Label htmlFor={`edit-hay-type-${item.id}`}>Hay Type</Label>
+            <Select value={hayType} onValueChange={setHayType} required>
+              <SelectTrigger id={`edit-hay-type-${item.id}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {HAY_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {hayType === "Other" && (
             <div className="grid gap-2">
-              <Label htmlFor={`edit-quantity-${item.id}`}>Quantity</Label>
+              <Label htmlFor={`edit-custom-hay-type-${item.id}`}>Specify Hay Type</Label>
               <Input
-                id={`edit-quantity-${item.id}`}
-                type="number"
-                step="0.01"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
+                id={`edit-custom-hay-type-${item.id}`}
+                value={customHayType}
+                onChange={(e) => setCustomHayType(e.target.value)}
+                placeholder="Enter hay type name"
                 required
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor={`edit-unit-${item.id}`}>Unit</Label>
-              <Select value={unit} onValueChange={(value: "tons" | "bales") => setUnit(value)}>
-                <SelectTrigger id={`edit-unit-${item.id}`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tons">Tons</SelectItem>
-                  <SelectItem value="bales">Bales</SelectItem>
-                </SelectContent>
-              </Select>
+          )}
+
+          <div className="border rounded-lg p-4 bg-gray-50">
+            <h4 className="font-medium text-sm mb-3">Stock Information</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor={`edit-quantity-${item.id}`}>Quantity in Stock</Label>
+                <Input
+                  id={`edit-quantity-${item.id}`}
+                  type="number"
+                  step="0.01"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`edit-stock-unit-${item.id}`}>Stock Unit</Label>
+                <Select value={stockUnit} onValueChange={(value: StockUnit) => setStockUnit(value)}>
+                  <SelectTrigger id={`edit-stock-unit-${item.id}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tons">Tons</SelectItem>
+                    <SelectItem value="large_bales">Large Bales</SelectItem>
+                    <SelectItem value="small_bales">Small Bales</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor={`edit-price-${item.id}`}>Price per Unit</Label>
-            <Input
-              id={`edit-price-${item.id}`}
-              type="number"
-              step="0.01"
-              value={pricePerUnit}
-              onChange={(e) => setPricePerUnit(e.target.value)}
-              required
-            />
+          <div className="border rounded-lg p-4 bg-green-50">
+            <h4 className="font-medium text-sm mb-3">Pricing Information</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor={`edit-price-${item.id}`}>Price</Label>
+                <Input
+                  id={`edit-price-${item.id}`}
+                  type="number"
+                  step="0.01"
+                  value={pricePerUnit}
+                  onChange={(e) => setPricePerUnit(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor={`edit-selling-unit-${item.id}`}>Selling Unit</Label>
+                <Select value={sellingUnit} onValueChange={(value: SellingUnit) => setSellingUnit(value)}>
+                  <SelectTrigger id={`edit-selling-unit-${item.id}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tons">Per Ton</SelectItem>
+                    <SelectItem value="large_bales">Per Large Bale</SelectItem>
+                    <SelectItem value="small_bales">Per Small Bale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">

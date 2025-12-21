@@ -12,8 +12,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2, Package, Edit2 } from "lucide-react"
-import type { Inventory } from "@/lib/types"
+import type { Inventory, StockUnit, SellingUnit } from "@/lib/types"
 import { InventoryItemEdit } from "@/components/inventory-item-edit"
+import { HAY_TYPES } from "@/lib/hay-types"
+import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 
 interface InventoryListProps {
   inventory: Inventory[]
@@ -24,8 +26,11 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [productName, setProductName] = useState("")
+  const [hayType, setHayType] = useState<string>("")
+  const [customHayType, setCustomHayType] = useState("")
   const [quantity, setQuantity] = useState("")
-  const [unit, setUnit] = useState<"tons" | "bales">("tons")
+  const [stockUnit, setStockUnit] = useState<StockUnit>("tons")
+  const [sellingUnit, setSellingUnit] = useState<SellingUnit>("tons")
   const [pricePerUnit, setPricePerUnit] = useState("")
   const [deliveryAvailable, setDeliveryAvailable] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,23 +42,29 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
     setIsLoading(true)
     setError(null)
 
+    const finalProductName = hayType === "Other" ? customHayType : hayType
+
     const supabase = createClient()
 
     try {
       const { error } = await supabase.from("inventory").insert({
         supplier_id: supplierId,
-        product_name: productName,
+        product_name: finalProductName,
         quantity: Number.parseFloat(quantity),
-        unit,
+        stock_unit: stockUnit,
+        selling_unit: sellingUnit,
         price_per_unit: Number.parseFloat(pricePerUnit),
         delivery_available: deliveryAvailable,
       })
 
       if (error) throw error
 
-      // Reset form
+      setHayType("")
+      setCustomHayType("")
       setProductName("")
       setQuantity("")
+      setStockUnit("tons")
+      setSellingUnit("tons")
       setPricePerUnit("")
       setDeliveryAvailable(false)
       setIsAdding(false)
@@ -103,53 +114,93 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
             <CardContent className="pt-6">
               <form onSubmit={handleAdd} className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="product-name">Product Name</Label>
-                  <Input
-                    id="product-name"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    placeholder="e.g., Alfalfa Hay"
-                    required
-                  />
+                  <Label htmlFor="hay-type">Hay Type</Label>
+                  <Select value={hayType} onValueChange={setHayType} required>
+                    <SelectTrigger id="hay-type">
+                      <SelectValue placeholder="Select hay type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {HAY_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {hayType === "Other" && (
                   <div className="grid gap-2">
-                    <Label htmlFor="quantity">Quantity</Label>
+                    <Label htmlFor="custom-hay-type">Specify Hay Type</Label>
                     <Input
-                      id="quantity"
-                      type="number"
-                      step="0.01"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
+                      id="custom-hay-type"
+                      value={customHayType}
+                      onChange={(e) => setCustomHayType(e.target.value)}
+                      placeholder="Enter hay type name"
                       required
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="unit">Unit</Label>
-                    <Select value={unit} onValueChange={(value: "tons" | "bales") => setUnit(value)}>
-                      <SelectTrigger id="unit">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="tons">Tons</SelectItem>
-                        <SelectItem value="bales">Bales</SelectItem>
-                      </SelectContent>
-                    </Select>
+                )}
+
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <h4 className="font-medium text-sm mb-3">Stock Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="quantity">Quantity in Stock</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        step="0.01"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="stock-unit">Stock Unit</Label>
+                      <Select value={stockUnit} onValueChange={(value: StockUnit) => setStockUnit(value)}>
+                        <SelectTrigger id="stock-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tons">Tons</SelectItem>
+                          <SelectItem value="large_bales">Large Bales</SelectItem>
+                          <SelectItem value="small_bales">Small Bales</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Price per Unit</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={pricePerUnit}
-                    onChange={(e) => setPricePerUnit(e.target.value)}
-                    placeholder="0.00"
-                    required
-                  />
+                <div className="border rounded-lg p-4 bg-green-50">
+                  <h4 className="font-medium text-sm mb-3">Pricing Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Price</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        step="0.01"
+                        value={pricePerUnit}
+                        onChange={(e) => setPricePerUnit(e.target.value)}
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="selling-unit">Selling Unit</Label>
+                      <Select value={sellingUnit} onValueChange={(value: SellingUnit) => setSellingUnit(value)}>
+                        <SelectTrigger id="selling-unit">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tons">Per Ton</SelectItem>
+                          <SelectItem value="large_bales">Per Large Bale</SelectItem>
+                          <SelectItem value="small_bales">Per Small Bale</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -171,6 +222,10 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
                     variant="outline"
                     onClick={() => {
                       setIsAdding(false)
+                      setHayType("")
+                      setCustomHayType("")
+                      setStockUnit("tons")
+                      setSellingUnit("tons")
                       setError(null)
                     }}
                     disabled={isLoading}
@@ -200,14 +255,14 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
                   <div className="flex-1">
                     <div className="font-semibold text-lg">{item.product_name}</div>
                     <div className="text-sm text-gray-600">
-                      {item.quantity} {item.unit}
+                      {item.quantity} {getStockUnitLabel(item.stock_unit)} in stock
                       {item.delivery_available && " • Delivery available"}
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="font-bold text-xl text-green-700">${item.price_per_unit}</div>
-                      <div className="text-xs text-gray-500">per {item.unit === "tons" ? "ton" : "bale"}</div>
+                      <div className="text-xs text-gray-500">{getSellingUnitLabel(item.selling_unit)}</div>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="icon" onClick={() => setEditingId(item.id)}>

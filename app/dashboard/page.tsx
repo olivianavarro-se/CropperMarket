@@ -19,13 +19,13 @@ export default async function DashboardPage() {
   // Get user profile
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
-  // Check if user is a supplier
-  if (profile?.user_type !== "supplier") {
+  // Check if user is a supplier, grower, or broker
+  if (profile?.user_type !== "supplier" && profile?.user_type !== "grower" && profile?.user_type !== "broker") {
     redirect("/")
   }
 
   // Get supplier info
-  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).single()
+  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()
 
   // Get inventory if supplier profile exists
   let inventory = []

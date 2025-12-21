@@ -37,24 +37,29 @@ export function Header() {
     })
 
     return () => subscription.unsubscribe()
-    // </CHANGE>
   }, [])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      // If logout fails (e.g., user already deleted), still clear local session
+      console.error("Logout error:", error)
+    }
     setUser(null)
     setProfile(null)
     router.push("/")
-    // Use window.location.reload() to ensure complete state reset
     setTimeout(() => {
       window.location.href = "/"
     }, 100)
   }
-  // </CHANGE>
+
+  const isHomePage = pathname === "/"
+  const containerPadding = isHomePage ? "pl-6" : "pl-4"
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-md shadow-sm z-10 sticky top-0">
-      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <div className={`px-4 pr-4 py-4 flex items-center justify-between ${isHomePage ? "pl-6" : ""}`}>
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center shadow-md">
             <span className="text-white font-bold text-lg">C</span>
@@ -68,22 +73,29 @@ export function Header() {
           {user ? (
             <>
               <span className="text-sm text-gray-600">Hello, {profile?.full_name || user.email}</span>
-              {profile?.user_type === "supplier" && (
-                <>
-                  <Button asChild variant={pathname === "/" ? "default" : "outline"} className="shadow-sm">
-                    <Link href="/">Browse Market</Link>
-                  </Button>
-                  <Button asChild variant={pathname === "/dashboard" ? "default" : "outline"} className="shadow-sm">
-                    <Link href="/dashboard">My Dashboard</Link>
-                  </Button>
-                </>
+              <Button asChild variant={pathname === "/" ? "default" : "outline"} className="shadow-sm">
+                <Link href="/">Home</Link>
+              </Button>
+              <Button asChild variant={pathname === "/search" ? "default" : "outline"} className="shadow-sm">
+                <Link href="/search">Search</Link>
+              </Button>
+              {(profile?.user_type === "grower" || profile?.user_type === "broker") && (
+                <Button asChild variant={pathname === "/dashboard" ? "default" : "outline"} className="shadow-sm">
+                  <Link href="/dashboard">My Dashboard</Link>
+                </Button>
               )}
-              <Button onClick={handleLogout} variant="ghost">
-                Logout
+              <Button asChild variant={pathname === "/settings" ? "default" : "outline"} className="shadow-sm">
+                <Link href="/settings">Account</Link>
               </Button>
             </>
           ) : (
             <>
+              <Button asChild variant={pathname === "/" ? "default" : "outline"} className="shadow-sm">
+                <Link href="/">Home</Link>
+              </Button>
+              <Button asChild variant={pathname === "/search" ? "default" : "outline"} className="shadow-sm">
+                <Link href="/search">Search</Link>
+              </Button>
               <Button asChild variant="ghost">
                 <Link href="/auth/login">Login</Link>
               </Button>

@@ -1,6 +1,7 @@
-export type UserType = "public" | "supplier"
+export type UserType = "grower" | "broker" | "buyer"
 export type SupplierType = "broker" | "grower"
-export type Unit = "tons" | "bales"
+export type StockUnit = "tons" | "large_bales" | "small_bales"
+export type SellingUnit = "tons" | "large_bales" | "small_bales"
 
 export interface Profile {
   id: string
@@ -25,6 +26,8 @@ export interface Supplier {
   zip_code: string | null
   latitude: number | null
   longitude: number | null
+  visible_to_buyers: boolean
+  visible_to_brokers: boolean
   created_at: string
   updated_at: string
 }
@@ -34,7 +37,8 @@ export interface Inventory {
   supplier_id: string
   product_name: string
   quantity: number
-  unit: Unit
+  stock_unit: StockUnit
+  selling_unit: SellingUnit
   price_per_unit: number
   delivery_available: boolean
   created_at: string
