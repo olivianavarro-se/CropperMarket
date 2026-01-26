@@ -65,20 +65,29 @@ export function MapView({
   useEffect(() => {
     if (!mapsApiKey || locations.length === 0) return
 
+    let isComponentMounted = true
+    let retryCount = 0
+    const maxRetries = 50 // 5 seconds max wait
+
     const initMap = async () => {
+      if (!isComponentMounted) return
+
       if (!window.google?.maps?.Map) {
-        setTimeout(initMap, 100)
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(initMap, 100)
+        } else {
+          setMapsError("Google Maps failed to load")
+        }
         return
       }
 
       try {
+        const mapElement = document.getElementById("map")
+        if (!mapElement || !isComponentMounted) return
+
         setMapsLoaded(true)
         setMapsError(null)
-
-        const isValidLocation = (loc: { lat: number; lng: number } | null | undefined): boolean => {
-          if (!loc) return false
-          return loc.lat !== 0 && loc.lng !== 0 && !isNaN(loc.lat) && !isNaN(loc.lng)
-        }
 
         const initialCenter = DEFAULT_CENTER
         const initialZoom = 5 // Integer zoom levels render crisp map tiles
@@ -92,7 +101,7 @@ export function MapView({
           mapOptions.mapId = mapId
         }
 
-        const mapInstance = new window.google.maps.Map(document.getElementById("map") as HTMLElement, mapOptions)
+        const mapInstance = new window.google.maps.Map(mapElement, mapOptions)
 
         setMap(mapInstance)
 
@@ -175,27 +184,37 @@ export function MapView({
     if (!window.google?.maps) {
       const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
       if (existingScript) {
-        existingScript.addEventListener("load", initMap)
-        return () => {
-          existingScript.removeEventListener("load", initMap)
+        // Script exists, wait for it to load
+        if ((window as any).google?.maps) {
+          initMap()
+        } else {
+          const handleLoad = () => initMap()
+          existingScript.addEventListener("load", handleLoad)
+          return () => {
+            isComponentMounted = false
+            existingScript.removeEventListener("load", handleLoad)
+          }
         }
-      }
+      } else {
+        const script = document.createElement("script")
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=marker&loading=async`
+        script.async = true
+        script.defer = true
+        script.onload = () => {
+          if (isComponentMounted) initMap()
+        }
+        script.onerror = () => {
+          if (isComponentMounted) setMapsError("Failed to load Google Maps")
+        }
 
-      const script = document.createElement("script")
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=marker&loading=async`
-      script.async = true
-      script.defer = true
-      script.onload = initMap
-      script.onerror = () => {
-        setMapsError("Failed to load Google Maps")
+        document.head.appendChild(script)
       }
-
-      document.head.appendChild(script)
     } else {
       initMap()
     }
 
     return () => {
+      isComponentMounted = false
       markers.forEach((marker) => {
         if (marker.map) marker.map = null
       })
