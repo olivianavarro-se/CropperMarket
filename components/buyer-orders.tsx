@@ -5,7 +5,18 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Package, Building2, MapPin, MessageSquare, Clock, RefreshCw } from "lucide-react"
+import { Loader2, Package, Building2, MapPin, MessageSquare, Clock, RefreshCw, Trash2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { formatDistanceToNow } from "date-fns"
 
 interface RequestedItem {
@@ -66,6 +77,7 @@ const statusDescriptions = {
 export function BuyerOrders({ userId }: BuyerOrdersProps) {
   const [orders, setOrders] = useState<OrderRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "completed">("all")
 
   const supabase = createClient()
@@ -132,6 +144,26 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
   useEffect(() => {
     fetchOrders()
   }, [userId])
+
+  const deleteOrder = async (orderId: string) => {
+    setDeleting(orderId)
+    try {
+      const { error } = await supabase
+        .from("order_requests")
+        .delete()
+        .eq("id", orderId)
+
+      if (error) {
+        console.error("[Orders] Error deleting order:", error)
+        return
+      }
+
+      // Remove from local state
+      setOrders((prev) => prev.filter((order) => order.id !== orderId))
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   const filteredOrders = filter === "all" ? orders : orders.filter((order) => order.status === filter)
 
@@ -229,6 +261,39 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                       </span>
                     </div>
                   </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={deleting === order.id}
+                      >
+                        {deleting === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Order Request</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this order request? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteOrder(order.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
