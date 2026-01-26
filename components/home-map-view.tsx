@@ -29,9 +29,10 @@ type FilterOptions = {
 interface HomeMapViewProps {
   locations: LocationWithSupplier[]
   isAuthenticated?: boolean
+  userId?: string | null
 }
 
-export function HomeMapView({ locations, isAuthenticated = false }: HomeMapViewProps) {
+export function HomeMapView({ locations, isAuthenticated = false, userId }: HomeMapViewProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const { location: userLocation, loading: locationLoading } = useUserLocation()
   const [selectedLocation, setSelectedLocation] = useState<LocationWithSupplier | null>(null)
@@ -516,6 +517,7 @@ export function HomeMapView({ locations, isAuthenticated = false }: HomeMapViewP
           <MapView
             locations={filteredLocations}
             isAuthenticated={isAuthenticated}
+            userId={userId}
             userLocation={userLocation}
             selectedLocation={selectedLocation}
             onLocationSelect={setSelectedLocation}

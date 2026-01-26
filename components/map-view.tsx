@@ -7,6 +7,7 @@ import type { LocationWithSupplier } from "@/lib/types"
 interface MapViewProps {
   locations: LocationWithSupplier[]
   isAuthenticated?: boolean
+  userId?: string | null
   userLocation?: { lat: number; lng: number } | null
   selectedLocation?: LocationWithSupplier | null
   onLocationSelect?: (location: LocationWithSupplier | null) => void
@@ -18,6 +19,7 @@ const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of U
 export function MapView({
   locations,
   isAuthenticated = false,
+  userId,
   userLocation,
   selectedLocation,
   onLocationSelect,
@@ -328,6 +330,7 @@ export function MapView({
             location={selectedLocation}
             onClose={() => onLocationSelect?.(null)}
             isAuthenticated={isAuthenticated}
+            userId={userId}
             activeFilters={activeFilters}
           />
         </div>

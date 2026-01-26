@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,17 +10,20 @@ import type { LocationWithSupplier } from "@/lib/types"
 import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 import { HAY_TYPES } from "@/lib/hay-types"
 import { useMemo } from "react"
+import { ContactSupplierDialog } from "@/components/contact-supplier-dialog"
 
 interface LocationCardProps {
   location: LocationWithSupplier
   onClose: () => void
   isAuthenticated?: boolean
   activeFilters?: any // Added activeFilters to filter displayed inventory
+  userId?: string | null
 }
 
-export function LocationCard({ location, onClose, isAuthenticated = false, activeFilters }: LocationCardProps) {
+export function LocationCard({ location, onClose, isAuthenticated = false, activeFilters, userId }: LocationCardProps) {
   const router = useRouter()
   const supplier = location.supplier
+  const [showContactDialog, setShowContactDialog] = useState(false)
 
   const filteredInventory = useMemo(() => {
     if (!activeFilters) return location.inventory
@@ -66,8 +70,8 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
   const handleContactClick = () => {
     if (!isAuthenticated) {
       router.push("/auth/login")
-    } else if (supplier.email) {
-      window.location.href = `mailto:${supplier.email}?subject=Inquiry about ${supplier.business_name} - ${location.name}`
+    } else {
+      setShowContactDialog(true)
     }
   }
 
@@ -196,20 +200,26 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
         <Button
           className="w-full shadow-md hover:shadow-lg transition-all"
           onClick={handleContactClick}
-          disabled={!supplier.email && isAuthenticated}
         >
           {!isAuthenticated ? (
             <>
               <Lock className="w-4 h-4 mr-2" />
               Sign In to Contact Supplier
             </>
-          ) : supplier.email ? (
-            "Contact Supplier"
           ) : (
-            "No Contact Email"
+            "Contact Supplier"
           )}
         </Button>
       </CardContent>
+
+      {isAuthenticated && userId && (
+        <ContactSupplierDialog
+          open={showContactDialog}
+          onOpenChange={setShowContactDialog}
+          location={location}
+          userId={userId}
+        />
+      )}
     </Card>
   )
 }

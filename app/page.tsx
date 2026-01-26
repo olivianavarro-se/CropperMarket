@@ -48,7 +48,7 @@ export default async function Home() {
     <div className="flex flex-col h-screen">
       <Header />
       <main className="flex-1 relative">
-        <HomeMapView locations={locationsWithInventory || []} isAuthenticated={isAuthenticated} />
+        <HomeMapView locations={locationsWithInventory || []} isAuthenticated={isAuthenticated} userId={user?.id} />
       </main>
     </div>
   )
