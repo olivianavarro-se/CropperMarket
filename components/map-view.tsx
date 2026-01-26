@@ -33,7 +33,8 @@ export function MapView({
   const initialMapSet = useRef(false)
   const prevFiltersActive = useRef(false)
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined
+  // Map ID is optional - only use if properly configured in Google Cloud Console
+  const mapId = undefined // Disabled to avoid ApiProjectMapError
 
   useEffect(() => {
     if (!map || !mapsLoaded || !userLocation || hasUserInteracted.current) return
