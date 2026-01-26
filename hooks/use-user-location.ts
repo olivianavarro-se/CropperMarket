@@ -24,15 +24,19 @@ export function useUserLocation(): UseUserLocationResult {
 
   useEffect(() => {
     let isMounted = true
+    const abortController = new AbortController()
     const supabase = createClient()
 
     const getIPLocation = async (): Promise<UserLocation | null> => {
       try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), 5000)
+        const timeoutId = setTimeout(() => {
+          if (!abortController.signal.aborted) {
+            abortController.abort()
+          }
+        }, 5000)
 
         const response = await fetch("https://ipapi.co/json/", {
-          signal: controller.signal,
+          signal: abortController.signal,
         })
 
         clearTimeout(timeoutId)
@@ -54,6 +58,10 @@ export function useUserLocation(): UseUserLocationResult {
         }
         return null
       } catch (err) {
+        // Silently handle abort errors (expected on unmount or timeout)
+        if (err instanceof Error && err.name === "AbortError") {
+          return null
+        }
         return null
       }
     }
@@ -172,6 +180,7 @@ export function useUserLocation(): UseUserLocationResult {
 
     return () => {
       isMounted = false
+      abortController.abort()
     }
   }, [])
 
