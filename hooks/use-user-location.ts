@@ -83,8 +83,12 @@ export function useUserLocation(): UseUserLocationResult {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
         if (authError) {
-          console.error("[Location] Auth error:", authError.message)
-          // Fallback to default map if auth fails
+          // Auth session missing is expected for non-logged-in users
+          // Only log if it's an unexpected error
+          if (authError.message !== "Auth session missing!") {
+            console.error("[Location] Auth error:", authError.message)
+          }
+          // Show default map for non-logged-in users
           if (isMounted) {
             setLocation(null)
             setLoading(false)

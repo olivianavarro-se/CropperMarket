@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
-import { SupplierProfile } from "@/components/supplier-profile"
-import { LocationList } from "@/components/location-list"
 import { SetupSupplierProfile } from "@/components/setup-supplier-profile"
+import { DashboardTabs } from "@/components/dashboard-tabs"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -47,16 +46,13 @@ export default async function DashboardPage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Supplier Dashboard</h1>
-          <p className="text-gray-600">Manage your business profile, locations, and inventory</p>
+          <p className="text-gray-600">Manage your business profile, locations, inventory, calendar, and orders</p>
         </div>
 
         {!supplier ? (
           <SetupSupplierProfile userId={user.id} />
         ) : (
-          <div className="max-w-4xl mx-auto space-y-6">
-            <SupplierProfile supplier={supplier} userId={user.id} />
-            <LocationList locations={locations} supplierId={supplier.id} />
-          </div>
+          <DashboardTabs supplier={supplier} userId={user.id} locations={locations} />
         )}
       </main>
     </div>
