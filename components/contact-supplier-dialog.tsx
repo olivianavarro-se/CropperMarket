@@ -54,10 +54,12 @@ export function ContactSupplierDialog({
     }
   }
 
-  const handleQuantityChange = (inventoryId: string, quantity: number) => {
+  const handleQuantityChange = (inventoryId: string, quantity: number, maxAvailable: number) => {
     setSelectedItems(
       selectedItems.map((item) =>
-        item.inventoryId === inventoryId ? { ...item, quantity: Math.max(1, quantity) } : item
+        item.inventoryId === inventoryId 
+          ? { ...item, quantity: Math.max(1, Math.min(quantity, maxAvailable)) } 
+          : item
       )
     )
   }
@@ -124,15 +126,6 @@ export function ContactSupplierDialog({
       }
 
       setIsSuccess(true)
-      setTimeout(() => {
-        onOpenChange(false)
-        // Reset form state after closing
-        setTimeout(() => {
-          setSelectedItems([])
-          setMessage("")
-          setIsSuccess(false)
-        }, 300)
-      }, 2000)
     } catch (err) {
       console.error("[Location] Unexpected error:", err)
       setError("An unexpected error occurred. Please try again.")
@@ -141,16 +134,27 @@ export function ContactSupplierDialog({
     }
   }
 
+  const handleCloseSuccess = () => {
+    onOpenChange(false)
+    // Reset form state after closing
+    setTimeout(() => {
+      setSelectedItems([])
+      setMessage("")
+      setIsSuccess(false)
+    }, 300)
+  }
+
   if (isSuccess) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleCloseSuccess}>
         <DialogContent className="sm:max-w-md">
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Request Sent!</h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-6">
               Your request has been sent to {location.supplier.business_name}. You can track the status in your Orders tab.
             </p>
+            <Button onClick={handleCloseSuccess}>Close</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -251,12 +255,16 @@ export function ContactSupplierDialog({
                                 id={`qty-${item.id}`}
                                 type="number"
                                 min="1"
+                                max={item.quantity}
                                 value={selectedItem?.quantity || 1}
                                 onChange={(e) =>
-                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1)
+                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.quantity)
                                 }
                                 className="w-20 h-8 text-sm"
                               />
+                              <span className="text-xs text-gray-500">
+                                (max: {item.quantity})
+                              </span>
                             </div>
                           )}
                         </div>
