@@ -1,14 +1,14 @@
 "use client"
 
 import React from "react"
-
 import { useState } from "react"
 import { Building2, MapPin, Calendar, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Supplier, Location, Inventory } from "@/lib/types"
 import { SupplierProfile } from "@/components/supplier-profile"
 import { LocationList } from "@/components/location-list"
-import { SupplierOrders } from "@/components/supplier-orders"
+import { SupplierOrdersWrapper } from "@/components/supplier-orders-wrapper"
+import { SupplierOrders } from "@/components/supplier-orders" // Import SupplierOrders component
 
 interface LocationWithInventory extends Location {
   inventory: Inventory[]
@@ -103,7 +103,7 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
         )}
 
         {activeTab === "orders" && (
-          <SupplierOrders supplierId={supplier.id} />
+          <SupplierOrdersWrapper supplierId={supplier.id} userId={userId} />
         )}
       </div>
     </div>
