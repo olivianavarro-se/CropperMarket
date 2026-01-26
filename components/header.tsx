@@ -104,7 +104,7 @@ export function Header() {
               <Button asChild variant={pathname === "/search" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/search">Search</Link>
               </Button>
-              {(profile?.account_type === "grower" || profile?.account_type === "broker") && (
+              {(profile?.account_type === "grower" || profile?.account_type === "broker" || profile?.account_type === "buyer") && (
                 <Button
                   asChild
                   variant={pathname === "/dashboard" ? "default" : "outline"}
