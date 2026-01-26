@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface UserLocation {
   lat: number
@@ -13,12 +14,8 @@ interface UseUserLocationResult {
   error: string | null
 }
 
-// Default location: Geographic center of United States
-const DEFAULT_LOCATION: UserLocation = { lat: 39.8283, lng: -98.5795 }
-
-const CACHE_KEY = "cropper_ip_location"
-const RATE_LIMIT_KEY = "cropper_ip_rate_limited"
-const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+// 7 days in milliseconds for refresh cycle
+const REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000
 
 export function useUserLocation(): UseUserLocationResult {
   const [location, setLocation] = useState<UserLocation | null>(null)
@@ -27,171 +24,143 @@ export function useUserLocation(): UseUserLocationResult {
 
   useEffect(() => {
     let isMounted = true
-
-    const getCachedIPLocation = (): UserLocation | null => {
-      try {
-        const cached = localStorage.getItem(CACHE_KEY)
-        if (!cached) return null
-
-        const { location, timestamp } = JSON.parse(cached)
-        const now = Date.now()
-
-        // Check if cache is still valid (within 24 hours)
-        if (now - timestamp < CACHE_DURATION) {
-          console.log("[v0] Using cached IP location")
-          return location
-        }
-
-        // Cache expired, remove it
-        localStorage.removeItem(CACHE_KEY)
-        return null
-      } catch (err) {
-        // If cache is corrupted, remove it
-        localStorage.removeItem(CACHE_KEY)
-        return null
-      }
-    }
-
-    const isRateLimited = (): boolean => {
-      try {
-        const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY)
-        if (!rateLimitData) return false
-
-        const { timestamp } = JSON.parse(rateLimitData)
-        const now = Date.now()
-
-        // Rate limit flag expires after 1 hour
-        if (now - timestamp < 60 * 60 * 1000) {
-          return true
-        }
-
-        // Rate limit period expired, remove flag
-        localStorage.removeItem(RATE_LIMIT_KEY)
-        return false
-      } catch (err) {
-        localStorage.removeItem(RATE_LIMIT_KEY)
-        return false
-      }
-    }
-
-    const setRateLimited = () => {
-      try {
-        localStorage.setItem(
-          RATE_LIMIT_KEY,
-          JSON.stringify({
-            timestamp: Date.now(),
-          }),
-        )
-      } catch (err) {
-        // Silently fail if localStorage is unavailable
-      }
-    }
-
-    const cacheIPLocation = (location: UserLocation) => {
-      try {
-        localStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({
-            location,
-            timestamp: Date.now(),
-          }),
-        )
-      } catch (err) {
-        // Silently fail if localStorage is unavailable
-        console.log("[v0] Could not cache IP location")
-      }
-    }
+    const supabase = createClient()
 
     const getIPLocation = async (): Promise<UserLocation | null> => {
-      const cached = getCachedIPLocation()
-      if (cached) return cached
-
-      if (isRateLimited()) {
-        console.log("[v0] IP geolocation skipped (rate limited), using default location")
-        return null
-      }
-
       try {
-        const response = await fetch("https://ipapi.co/json/")
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+        const response = await fetch("https://ipapi.co/json/", {
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
 
         if (!response.ok) {
-          if (response.status === 429) {
-            setRateLimited()
-            console.log("[v0] IP geolocation rate limited, will retry in 1 hour")
-          } else {
-            console.log("[v0] IP geolocation API failed with status:", response.status)
-          }
+          console.error("[Location] IP API failed:", response.status)
           return null
         }
 
         const data = await response.json()
 
         if (data.error) {
-          console.log("[v0] IP geolocation unavailable, using default location")
+          console.error("[Location] IP API error:", data.reason || "Unknown")
           return null
         }
 
         if (data.latitude && data.longitude) {
-          const ipLocation = { lat: data.latitude, lng: data.longitude }
-          cacheIPLocation(ipLocation)
-          return ipLocation
+          return { lat: data.latitude, lng: data.longitude }
         }
         return null
       } catch (err) {
-        console.log("[v0] IP geolocation unavailable, using default location")
         return null
       }
     }
 
-    const getBrowserLocation = (): Promise<UserLocation | null> => {
-      return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-          resolve(null)
-          return
-        }
+    const saveLocationToSupabase = async (userId: string, loc: UserLocation) => {
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({
+            latitude: loc.lat,
+            longitude: loc.lng,
+            location_updated_at: new Date().toISOString(),
+          })
+          .eq("id", userId)
 
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            resolve({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            })
-          },
-          () => {
-            // User denied or error occurred
-            resolve(null)
-          },
-          {
-            enableHighAccuracy: false,
-            timeout: 5000,
-            maximumAge: 0, // Don't cache browser location
-          },
-        )
-      })
+        if (error) {
+          console.error("[Location] Failed to save to Supabase:", error.message)
+        }
+      } catch (err) {
+        console.error("[Location] Error saving location:", err)
+      }
     }
 
     const detectLocation = async () => {
-      // Try browser geolocation first
-      const browserLocation = await getBrowserLocation()
-      if (browserLocation && isMounted) {
-        setLocation(browserLocation)
-        setLoading(false)
-        return
-      }
+      try {
+        // Check if user is logged in
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-      // Fall back to IP geolocation (with 24-hour cache)
-      const ipLocation = await getIPLocation()
-      if (ipLocation && isMounted) {
-        setLocation(ipLocation)
-        setLoading(false)
-        return
-      }
+        if (authError) {
+          console.error("[Location] Auth error:", authError.message)
+          // Fallback to default map if auth fails
+          if (isMounted) {
+            setLocation(null)
+            setLoading(false)
+          }
+          return
+        }
 
-      // Fall back to default location (Geographic center of United States)
-      if (isMounted) {
-        setLocation(DEFAULT_LOCATION)
-        setError("Could not detect location, using default")
-        setLoading(false)
+        if (!user) {
+          // Not logged in - show default US map, don't use API
+          if (isMounted) {
+            setLocation(null)
+            setLoading(false)
+          }
+          return
+        }
+
+        // User is logged in - check for stored location in profile
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("latitude, longitude, location_updated_at")
+          .eq("id", user.id)
+          .single()
+
+        if (profileError) {
+          console.error("[Location] Profile fetch error:", profileError.message)
+        }
+
+        const hasStoredLocation = profile?.latitude && profile?.longitude
+        const locationUpdatedAt = profile?.location_updated_at ? new Date(profile.location_updated_at).getTime() : 0
+        const now = Date.now()
+        const needsRefresh = !locationUpdatedAt || (now - locationUpdatedAt > REFRESH_INTERVAL)
+
+        if (hasStoredLocation && !needsRefresh) {
+          // Use stored location (less than 7 days old)
+          if (isMounted) {
+            setLocation({ lat: profile.latitude, lng: profile.longitude })
+            setLoading(false)
+          }
+          return
+        }
+
+        if (hasStoredLocation && needsRefresh) {
+          // Location exists but needs refresh - use it immediately, then update in background
+          if (isMounted) {
+            setLocation({ lat: profile.latitude, lng: profile.longitude })
+            setLoading(false)
+          }
+
+          // Background refresh
+          const newLocation = await getIPLocation()
+          if (newLocation && isMounted) {
+            setLocation(newLocation)
+            await saveLocationToSupabase(user.id, newLocation)
+          }
+          return
+        }
+
+        // No stored location - get from IP API and save
+        const ipLocation = await getIPLocation()
+        
+        if (ipLocation) {
+          if (isMounted) {
+            setLocation(ipLocation)
+            setLoading(false)
+          }
+          await saveLocationToSupabase(user.id, ipLocation)
+        } else {
+          // No location available
+          if (isMounted) {
+            setLocation(null)
+            setError("Could not detect location")
+            setLoading(false)
+          }
+        }
+      } catch (err) {
+        console.error("[Location] Error detecting location:", err)
       }
     }
 

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
 import { SupplierProfile } from "@/components/supplier-profile"
-import { InventoryList } from "@/components/inventory-list"
+import { LocationList } from "@/components/location-list"
 import { SetupSupplierProfile } from "@/components/setup-supplier-profile"
 
 export default async function DashboardPage() {
@@ -19,23 +19,26 @@ export default async function DashboardPage() {
   // Get user profile
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
-  // Check if user is a supplier, grower, or broker
-  if (profile?.user_type !== "supplier" && profile?.user_type !== "grower" && profile?.user_type !== "broker") {
+  if (profile?.account_type !== "grower" && profile?.account_type !== "broker") {
     redirect("/")
   }
 
   // Get supplier info
   const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()
 
-  // Get inventory if supplier profile exists
-  let inventory = []
+  let locations = []
   if (supplier) {
-    const { data: inventoryData } = await supabase
-      .from("inventory")
-      .select("*")
+    const { data: locationsData } = await supabase
+      .from("locations")
+      .select(`
+        *,
+        inventory (*)
+      `)
       .eq("supplier_id", supplier.id)
       .order("created_at", { ascending: false })
-    inventory = inventoryData || []
+      .order("product_name", { ascending: true, referencedTable: "inventory" })
+
+    locations = locationsData || []
   }
 
   return (
@@ -44,19 +47,15 @@ export default async function DashboardPage() {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Supplier Dashboard</h1>
-          <p className="text-gray-600">Manage your business profile and inventory</p>
+          <p className="text-gray-600">Manage your business profile, locations, and inventory</p>
         </div>
 
         {!supplier ? (
           <SetupSupplierProfile userId={user.id} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <SupplierProfile supplier={supplier} userId={user.id} />
-            </div>
-            <div className="lg:col-span-2">
-              <InventoryList inventory={inventory} supplierId={supplier.id} />
-            </div>
+          <div className="max-w-4xl mx-auto space-y-6">
+            <SupplierProfile supplier={supplier} userId={user.id} />
+            <LocationList locations={locations} supplierId={supplier.id} />
           </div>
         )}
       </main>
