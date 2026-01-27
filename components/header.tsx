@@ -35,8 +35,6 @@ export function Header() {
 
         if (user && isMounted) {
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-          console.log("[v0] Profile data loaded:", profile)
-          console.log("[v0] Full name from profile:", profile?.full_name)
           if (isMounted) {
             setProfile(profile)
           }
@@ -52,11 +50,19 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (isMounted) {
-        setUser(session?.user ?? null)
-        if (!session?.user) {
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        
+        if (!currentUser) {
           setProfile(null)
+        } else {
+          // Fetch profile when user changes
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+          if (isMounted) {
+            setProfile(profile)
+          }
         }
       }
     })
@@ -72,7 +78,8 @@ export function Header() {
         },
         async (payload) => {
           // Update profile state when the profile is updated
-          if (payload.new && user && payload.new.id === user.id && isMounted) {
+          const currentUser = await supabase.auth.getUser()
+          if (payload.new && currentUser.data.user && payload.new.id === currentUser.data.user.id && isMounted) {
             setProfile(payload.new)
           }
         },
@@ -84,7 +91,7 @@ export function Header() {
       subscription.unsubscribe()
       profileChannel.unsubscribe()
     }
-  }, [user]) // Updated dependency array to useExhaustiveDependencies
+  }, [])
 
   const handleLogout = async () => {
     try {
