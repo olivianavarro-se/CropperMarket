@@ -12,36 +12,43 @@ export default async function Home() {
 
   let userType: string | null = null
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("user_type").eq("id", user.id).single()
-    userType = profile?.user_type || null
+    const { data: profile } = await supabase.from("profiles").select("account_type").eq("id", user.id).single()
+    userType = profile?.account_type || null
   }
 
-  // Fetch all suppliers with their inventory
-  let query = supabase
-    .from("suppliers")
+  const query = supabase
+    .from("locations")
     .select(`
       *,
+      supplier:suppliers (*),
       inventory (*)
     `)
-    .not("inventory", "is", null)
+    .order("product_name", { ascending: true, referencedTable: "inventory" })
 
-  if (userType === "buyer") {
-    query = query.eq("visible_to_buyers", true)
-  } else if (userType === "broker") {
-    query = query.eq("visible_to_brokers", true)
-  }
-  // Growers and unauthenticated users see all suppliers
+  const { data: locationsData } = await query
 
-  const { data: suppliers } = await query
+  // Filter locations based on user visibility settings and inventory
+  const locationsWithInventory = locationsData?.filter((location) => {
+    const hasInventory = location.inventory && location.inventory.length > 0
+    if (!hasInventory) return false
 
-  // Filter suppliers that have at least one inventory item
-  const suppliersWithInventory = suppliers?.filter((supplier) => supplier.inventory && supplier.inventory.length > 0)
+    const supplier = location.supplier
+    if (!supplier) return false
+
+    if (userType === "buyer") {
+      return supplier.visible_to_buyers
+    } else if (userType === "broker") {
+      return supplier.visible_to_brokers
+    }
+    // Growers and unauthenticated users see all locations
+    return true
+  })
 
   return (
     <div className="flex flex-col h-screen">
       <Header />
       <main className="flex-1 relative">
-        <HomeMapView suppliers={suppliersWithInventory || []} isAuthenticated={isAuthenticated} />
+        <HomeMapView locations={locationsWithInventory || []} isAuthenticated={isAuthenticated} userId={user?.id} />
       </main>
     </div>
   )

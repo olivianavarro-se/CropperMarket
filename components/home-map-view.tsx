@@ -10,11 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Search } from "lucide-react"
 import { HAY_TYPES } from "@/lib/hay-types"
 import { useUserLocation } from "@/hooks/use-user-location"
-import type { Supplier, Inventory } from "@/lib/types"
-
-interface SupplierWithInventory extends Supplier {
-  inventory: Inventory[]
-}
+import type { LocationWithSupplier } from "@/lib/types"
 
 type FilterOptions = {
   type: "all" | "broker" | "grower"
@@ -27,17 +23,19 @@ type FilterOptions = {
   maxPrice: string
   cities: string[]
   states: string[]
+  sellingUnits: string[]
 }
 
 interface HomeMapViewProps {
-  suppliers: SupplierWithInventory[]
+  locations: LocationWithSupplier[]
   isAuthenticated?: boolean
+  userId?: string | null
 }
 
-export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewProps) {
+export function HomeMapView({ locations, isAuthenticated = false, userId }: HomeMapViewProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const { location: userLocation, loading: locationLoading } = useUserLocation()
-  const [selectedSupplier, setSelectedSupplier] = useState<SupplierWithInventory | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<LocationWithSupplier | null>(null)
   const [filters, setFilters] = useState<FilterOptions>({
     type: "all",
     hasInventory: false,
@@ -49,43 +47,47 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
     maxPrice: "",
     cities: [],
     states: [],
+    sellingUnits: [],
   })
 
   const availableCities = useMemo(
-    () => [...new Set(suppliers.map((s) => s.city).filter(Boolean))].sort() as string[],
-    [suppliers],
+    () => [...new Set(locations.map((l) => l.city).filter(Boolean))].sort() as string[],
+    [locations],
   )
   const availableStates = useMemo(
-    () => [...new Set(suppliers.map((s) => s.state).filter(Boolean))].sort() as string[],
-    [suppliers],
+    () => [...new Set(locations.map((l) => l.state).filter(Boolean))].sort() as string[],
+    [locations],
   )
 
-  const filteredSuppliers = useMemo(() => {
-    return suppliers.filter((supplier) => {
+  const filteredLocations = useMemo(() => {
+    return locations.filter((location) => {
+      const supplier = location.supplier
+
       const matchesSearch =
         supplier.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.zip_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.zip_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        location.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         supplier.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (supplier.inventory &&
-          supplier.inventory.some((item) => item.product_name.toLowerCase().includes(searchTerm.toLowerCase())))
+        (location.inventory &&
+          location.inventory.some((item) => item.product_name.toLowerCase().includes(searchTerm.toLowerCase())))
 
       const matchesType = filters.type === "all" || supplier.supplier_type === filters.type
-      const matchesInventory = !filters.hasInventory || (supplier.inventory && supplier.inventory.length > 0)
+      const matchesInventory = !filters.hasInventory || (location.inventory && location.inventory.length > 0)
       const matchesDelivery =
-        !filters.deliveryAvailable || (supplier.inventory && supplier.inventory.some((item) => item.delivery_available))
+        !filters.deliveryAvailable || (location.inventory && location.inventory.some((item) => item.delivery_available))
 
-      const matchesZipCode = !filters.zipCode || supplier.zip_code?.includes(filters.zipCode)
+      const matchesZipCode = !filters.zipCode || location.zip_code?.includes(filters.zipCode)
 
-      const matchesCities = filters.cities.length === 0 || (supplier.city && filters.cities.includes(supplier.city))
-      const matchesStates = filters.states.length === 0 || (supplier.state && filters.states.includes(supplier.state))
+      const matchesCities = filters.cities.length === 0 || (location.city && filters.cities.includes(location.city))
+      const matchesStates = filters.states.length === 0 || (location.state && filters.states.includes(location.state))
 
       const matchesHayType =
         (filters.hayTypes.length === 0 && !filters.customHayType) ||
-        (supplier.inventory &&
-          supplier.inventory.some((item) => {
+        (location.inventory &&
+          location.inventory.some((item) => {
             const matchesSelectedTypes = filters.hayTypes.filter((t) => t !== "Other").includes(item.product_name)
             const matchesCustomType =
               filters.hayTypes.includes("Other") &&
@@ -103,10 +105,20 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
       const maxPrice = filters.maxPrice ? Number.parseFloat(filters.maxPrice) : Number.POSITIVE_INFINITY
       const matchesPriceRange =
         (!filters.minPrice && !filters.maxPrice) ||
-        (supplier.inventory &&
-          supplier.inventory.some((item) => {
-            const price = Number.parseFloat(item.price_per_unit)
+        (location.inventory &&
+          location.inventory.some((item) => {
+            const price = Number.parseFloat(String(item.price_per_unit))
             return price >= minPrice && price <= maxPrice
+          }))
+
+      const matchesSellingUnit =
+        filters.sellingUnits.length === 0 ||
+        (location.inventory &&
+          location.inventory.some((item) => {
+            if (item.pricing_options && item.pricing_options.length > 0) {
+              return item.pricing_options.some((option) => filters.sellingUnits.includes(option.unit))
+            }
+            return item.selling_unit && filters.sellingUnits.includes(item.selling_unit)
           }))
 
       return (
@@ -118,10 +130,11 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
         matchesCities &&
         matchesStates &&
         matchesHayType &&
-        matchesPriceRange
+        matchesPriceRange &&
+        matchesSellingUnit
       )
     })
-  }, [searchTerm, filters, suppliers])
+  }, [searchTerm, filters, locations])
 
   const toggleHayType = (hayType: string) => {
     setFilters((prev) => ({
@@ -132,17 +145,12 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
     }))
   }
 
-  const toggleCity = (city: string) => {
+  const toggleSellingUnit = (unit: string) => {
     setFilters((prev) => ({
       ...prev,
-      cities: prev.cities.includes(city) ? prev.cities.filter((v) => v !== city) : [...prev.cities, city],
-    }))
-  }
-
-  const toggleState = (state: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      states: prev.states.includes(state) ? prev.states.filter((v) => v !== state) : [...prev.states, state],
+      sellingUnits: prev.sellingUnits.includes(unit)
+        ? prev.sellingUnits.filter((v) => v !== unit)
+        : [...prev.sellingUnits, unit],
     }))
   }
 
@@ -158,6 +166,7 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
       maxPrice: "",
       cities: [],
       states: [],
+      sellingUnits: [],
     })
     setSearchTerm("")
   }
@@ -171,7 +180,22 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
     filters.minPrice || filters.maxPrice ? 1 : 0,
     filters.cities.length,
     filters.states.length,
+    filters.sellingUnits.length,
   ].reduce((a, b) => a + b, 0)
+
+  const toggleState = (state: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      states: prev.states.includes(state) ? prev.states.filter((v) => v !== state) : [...prev.states, state],
+    }))
+  }
+
+  const toggleCity = (city: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      cities: prev.cities.includes(city) ? prev.cities.filter((v) => v !== city) : [...prev.cities, city],
+    }))
+  }
 
   return (
     <div className="relative w-full h-full">
@@ -253,6 +277,41 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
                 />
               </div>
             )}
+          </div>
+
+          {/* Selling Unit */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label className="text-sm font-semibold">Selling Unit</Label>
+              {filters.sellingUnits.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setFilters((prev) => ({ ...prev, sellingUnits: [] }))}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {[
+                { value: "tons", label: "Tons" },
+                { value: "small_bales", label: "Small Bales" },
+                { value: "large_bales", label: "Large Bales" },
+              ].map((unit) => (
+                <div key={unit.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`unit-${unit.value}`}
+                    checked={filters.sellingUnits.includes(unit.value)}
+                    onCheckedChange={() => toggleSellingUnit(unit.value)}
+                  />
+                  <Label htmlFor={`unit-${unit.value}`} className="font-normal cursor-pointer text-sm">
+                    {unit.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ZIP Code */}
@@ -369,7 +428,7 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
       <div className="absolute left-80 top-0 bottom-0 w-[450px] border-r bg-gradient-to-b from-white to-gray-50/50 flex flex-col overflow-hidden shadow-lg">
         <div className="p-6 border-b bg-white/80 backdrop-blur-sm flex-shrink-0 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {filteredSuppliers.length} {filteredSuppliers.length === 1 ? "Supplier" : "Suppliers"}
+            {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
           </h2>
 
           <div className="flex gap-3 mt-4">
@@ -385,44 +444,55 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filteredSuppliers.length === 0 ? (
+          {filteredLocations.length === 0 ? (
             <div className="text-center text-gray-500 py-12">
-              No suppliers match your filters. Try adjusting your search criteria.
+              No locations match your filters. Try adjusting your search criteria.
             </div>
           ) : (
-            filteredSuppliers.map((supplier) => (
+            filteredLocations.map((location) => (
               <button
-                key={supplier.id}
-                onClick={() => setSelectedSupplier(supplier)}
+                key={location.id}
+                onClick={() => setSelectedLocation(location)}
                 className={`w-full p-4 border rounded-xl hover:shadow-lg transition-all duration-200 text-left ${
-                  selectedSupplier?.id === supplier.id
+                  selectedLocation?.id === location.id
                     ? "border-green-500 bg-gradient-to-br from-green-50 to-green-100/50 shadow-md"
                     : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="font-semibold text-base text-gray-900">{supplier.business_name}</div>
-                  <div
-                    className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
-                      supplier.supplier_type === "broker" ? "bg-green-600" : "bg-yellow-600"
-                    }`}
-                  />
-                </div>
-                <div className="text-sm text-gray-600 capitalize mb-2">
-                  {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
-                </div>
-                {(supplier.address || supplier.city || supplier.state) && (
-                  <div className="text-sm text-gray-600 mb-2">
-                    {supplier.address && <div>{supplier.address}</div>}
-                    <div>
-                      {supplier.city}
-                      {supplier.state && `, ${supplier.state}`}
-                      {supplier.zip_code && ` ${supplier.zip_code}`}
+                <div className="flex items-start gap-3 mb-2">
+                  {location.supplier.logo_url && (
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                      <img
+                        src={location.supplier.logo_url || "/placeholder.svg"}
+                        alt={`${location.supplier.business_name} logo`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="font-semibold text-base text-gray-900">{location.supplier.business_name}</div>
+                      <div
+                        className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
+                          location.supplier.supplier_type === "broker" ? "bg-green-600" : "bg-yellow-600"
+                        }`}
+                      />
+                    </div>
+                    <div className="text-sm text-gray-600 capitalize mb-1">
+                      {location.supplier.supplier_type === "broker" ? "Broker" : "Grower"} • {location.name}
                     </div>
                   </div>
-                )}
-                {supplier.description && (
-                  <div className="text-sm text-gray-600 mt-2 line-clamp-2">{supplier.description}</div>
+                </div>
+                <div className="text-sm text-gray-600 mb-2">
+                  <div>{location.address}</div>
+                  <div>
+                    {location.city}, {location.state} {location.zip_code}
+                  </div>
+                </div>
+                {location.inventory.length > 0 && (
+                  <div className="text-xs text-gray-500">
+                    {location.inventory.length} item{location.inventory.length !== 1 ? "s" : ""} available
+                  </div>
                 )}
               </button>
             ))
@@ -445,11 +515,13 @@ export function HomeMapView({ suppliers, isAuthenticated = false }: HomeMapViewP
 
         <div className="flex-1">
           <MapView
-            suppliers={filteredSuppliers}
+            locations={filteredLocations}
             isAuthenticated={isAuthenticated}
+            userId={userId}
             userLocation={userLocation}
-            selectedSupplier={selectedSupplier}
-            onSupplierSelect={setSelectedSupplier}
+            selectedLocation={selectedLocation}
+            onLocationSelect={setSelectedLocation}
+            activeFilters={filters}
           />
         </div>
       </div>
