@@ -254,7 +254,6 @@ export function InventoryList({ inventory, supplierId }: InventoryListProps) {
                 >
                   <div className="flex-1">
                     <div className="font-semibold text-lg">{item.product_name}</div>
-                    {item.description && <div className="text-sm text-gray-600 italic mb-2">{item.description}</div>}
                     <div className="text-sm text-gray-600">
                       {item.quantity} {getStockUnitLabel(item.stock_unit)} in stock
                       {item.delivery_available && " • Delivery available"}

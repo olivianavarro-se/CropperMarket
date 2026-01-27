@@ -28,7 +28,6 @@ interface AccountSettingsProps {
 export function AccountSettings({ user, profile, supplier }: AccountSettingsProps) {
   const [fullName, setFullName] = useState(profile?.full_name || "")
   const [contactEmail, setContactEmail] = useState(supplier?.email || "")
-  const [phone, setPhone] = useState(supplier?.phone || "")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -53,10 +52,10 @@ export function AccountSettings({ user, profile, supplier }: AccountSettingsProp
 
       if (profileError) throw profileError
 
-      if (supplier && (contactEmail !== supplier.email || phone !== supplier.phone)) {
+      if (supplier && contactEmail !== supplier.email) {
         const { error: supplierError } = await supabase
           .from("suppliers")
-          .update({ email: contactEmail, phone: phone })
+          .update({ email: contactEmail })
           .eq("user_id", user.id)
 
         if (supplierError) throw supplierError
@@ -153,7 +152,7 @@ export function AccountSettings({ user, profile, supplier }: AccountSettingsProp
       {/* Account Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Account Information
           </CardTitle>
@@ -185,26 +184,12 @@ export function AccountSettings({ user, profile, supplier }: AccountSettingsProp
                   This email will be displayed in your business profile for others to contact you.
                 </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number (Public)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="(555) 123-4567"
-                />
-                <p className="text-xs text-muted-foreground">
-                  This phone number will be displayed in your business profile for others to contact you.
-                </p>
-              </div>
             </>
           )}
 
           <div className="space-y-2">
             <Label>Account Type</Label>
-            <Input value={profile?.account_type || "N/A"} disabled className="bg-gray-50 capitalize" />
+            <Input value={profile?.user_type || "N/A"} disabled className="bg-gray-50 capitalize" />
           </div>
 
           {(profileSuccess || profileError) && (
@@ -226,7 +211,7 @@ export function AccountSettings({ user, profile, supplier }: AccountSettingsProp
       {/* Change Password */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
             Change Password
           </CardTitle>
@@ -285,7 +270,7 @@ export function AccountSettings({ user, profile, supplier }: AccountSettingsProp
       {/* Actions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Account Actions</CardTitle>
+          <CardTitle>Account Actions</CardTitle>
           <CardDescription>Log out or permanently delete your account</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

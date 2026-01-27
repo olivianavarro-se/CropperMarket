@@ -8,7 +8,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "HayCropper Marketplace - Your Hay Market Platform",
+  title: "Cropper - Your Hay Market Platform",
   description:
     "Discover hay suppliers, browse inventory, and connect with brokers and growers in the agricultural marketplace.",
   generator: "v0.app",

@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Header } from "@/components/header"
+import { SupplierProfile } from "@/components/supplier-profile"
+import { InventoryList } from "@/components/inventory-list"
 import { SetupSupplierProfile } from "@/components/setup-supplier-profile"
-import { DashboardTabs } from "@/components/dashboard-tabs"
-import { BuyerDashboardTabs } from "@/components/buyer-dashboard-tabs"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -19,67 +19,45 @@ export default async function DashboardPage() {
   // Get user profile
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
-  const isBuyer = profile?.account_type === "buyer"
-  const isSupplier = profile?.account_type === "grower" || profile?.account_type === "broker"
-
-  // If not a buyer or supplier, redirect to home
-  if (!isBuyer && !isSupplier) {
+  // Check if user is a supplier, grower, or broker
+  if (profile?.user_type !== "supplier" && profile?.user_type !== "grower" && profile?.user_type !== "broker") {
     redirect("/")
   }
 
-  // For suppliers, get supplier info and locations
-  let supplier = null
-  let locations: any[] = []
-  
-  if (isSupplier) {
-    const { data: supplierData } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()
-    supplier = supplierData
+  // Get supplier info
+  const { data: supplier } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()
 
-    if (supplier) {
-      const { data: locationsData } = await supabase
-        .from("locations")
-        .select(`
-          *,
-          inventory (*)
-        `)
-        .eq("supplier_id", supplier.id)
-        .order("created_at", { ascending: false })
-        .order("product_name", { ascending: true, referencedTable: "inventory" })
-
-      locations = locationsData || []
-    }
+  // Get inventory if supplier profile exists
+  let inventory = []
+  if (supplier) {
+    const { data: inventoryData } = await supabase
+      .from("inventory")
+      .select("*")
+      .eq("supplier_id", supplier.id)
+      .order("created_at", { ascending: false })
+    inventory = inventoryData || []
   }
 
-  // Buyer Dashboard
-  if (isBuyer) {
-    return (
-      <div className="flex flex-col min-h-screen bg-gray-50">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Buyer Dashboard</h1>
-            <p className="text-gray-600">Track your orders and manage your calendar</p>
-          </div>
-          <BuyerDashboardTabs userId={user.id} />
-        </main>
-      </div>
-    )
-  }
-
-  // Supplier Dashboard
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Supplier Dashboard</h1>
-          <p className="text-gray-600">Manage your business profile, locations, inventory, calendar, and orders</p>
+          <p className="text-gray-600">Manage your business profile and inventory</p>
         </div>
 
         {!supplier ? (
           <SetupSupplierProfile userId={user.id} />
         ) : (
-          <DashboardTabs supplier={supplier} userId={user.id} locations={locations} />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <SupplierProfile supplier={supplier} userId={user.id} />
+            </div>
+            <div className="lg:col-span-2">
+              <InventoryList inventory={inventory} supplierId={supplier.id} />
+            </div>
+          </div>
         )}
       </main>
     </div>

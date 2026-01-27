@@ -10,15 +10,12 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Eye, EyeOff } from "lucide-react"
-import Image from "next/image"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
   const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -43,30 +40,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-[#FAF8F5]">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-4 text-center mb-1">
-            <Image
-              src="/images/hay-20cropper.png"
-              alt="HayCropper Marketplace"
-              width={400}
-              height={300}
-              className="object-contain"
-            />
+    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-3xl font-bold text-green-900">Cropper</h1>
+            <p className="text-sm text-green-700">Your Hay Market Platform</p>
           </div>
-          <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
-            <CardHeader className="pb-1 space-y-0">
-              <CardTitle className="text-2xl text-[#65411C] font-bold mb-0.5">Welcome Back</CardTitle>
-              <CardDescription className="text-[#8A6842]">Sign in to access your marketplace</CardDescription>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-2xl">Login</CardTitle>
+              <CardDescription>Enter your email below to login to your account</CardDescription>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent>
               <form onSubmit={handleLogin}>
                 <div className="flex flex-col gap-6">
                   <div className="grid gap-2">
-                    <Label htmlFor="email" className="text-[#65411C]">
-                      Email
-                    </Label>
+                    <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
@@ -74,54 +64,34 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-[#D4AF8E]"
                     />
                   </div>
                   <div className="grid gap-2">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-[#65411C]">
-                        Password
-                      </Label>
+                      <Label htmlFor="password">Password</Label>
                       <Link
                         href="/auth/forgot-password"
-                        className="text-sm text-[#F0B349] hover:text-[#FCE2A4] underline underline-offset-4"
+                        className="text-sm text-green-700 hover:text-green-900 underline underline-offset-4"
                       >
                         Forgot password?
                       </Link>
                     </div>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 border-[#D4AF8E]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
+                    <Input
+                      id="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
                   </div>
                   {error && <p className="text-sm text-red-500">{error}</p>}
-                  <Button
-                    type="submit"
-                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold text-lg h-12 shadow-md hover:shadow-lg transition-all"
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
-                <div className="mt-6 text-center text-sm text-[#8A6842]">
+                <div className="mt-4 text-center text-sm">
                   Don&apos;t have an account?{" "}
-                  <Link
-                    href="/auth/sign-up"
-                    className="text-[#F0B349] hover:text-[#FCE2A4] underline underline-offset-4 font-bold"
-                  >
+                  <Link href="/auth/sign-up" className="underline underline-offset-4">
                     Sign up
                   </Link>
                 </div>
