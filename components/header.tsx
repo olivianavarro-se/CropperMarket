@@ -121,7 +121,7 @@ export function Header() {
           {user ? (
             <>
               <span className="text-sm text-[#8A6842]">
-                Hello, {profile?.full_name || user.email?.split('@')[0] || 'User'}
+                Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
               </span>
               <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
