@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { geocodeAddressClient, waitForGoogleMaps } from "@/lib/geocode-client"
 
 interface SetupSupplierProfileProps {
   userId: string
@@ -23,86 +22,21 @@ export function SetupSupplierProfile({ userId }: SetupSupplierProfileProps) {
   const [description, setDescription] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
-  const [address, setAddress] = useState("")
-  const [city, setCity] = useState("")
-  const [state, setState] = useState("")
-  const [zipCode, setZipCode] = useState("")
   const [visibleToBuyers, setVisibleToBuyers] = useState(true)
   const [visibleToBrokers, setVisibleToBrokers] = useState(true)
-  const [geocodedLat, setGeocodedLat] = useState<number | null>(null)
-  const [geocodedLng, setGeocodedLng] = useState<number | null>(null)
+  const [deliveryAvailable, setDeliveryAvailable] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [addressWarning, setAddressWarning] = useState<string | null>(null)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
-    setAddressWarning(null)
 
     const supabase = createClient()
 
     try {
-      let latitude = null
-      let longitude = null
-      let finalAddress = address
-      let finalCity = city
-      let finalState = state
-      let finalZipCode = zipCode
-
-      const hasAnyAddress = address || city || state || zipCode
-      const hasAllRequiredAddress = address && city && state
-
-      if (hasAnyAddress && !hasAllRequiredAddress) {
-        setError("Please provide complete address information (Street Address, City, and State) to appear on the map.")
-        setIsLoading(false)
-        return
-      }
-
-      if (address && city && state) {
-        console.log("[v0] Attempting geocoding for address...")
-        const mapsLoaded = await waitForGoogleMaps()
-
-        if (!mapsLoaded) {
-          setError("Google Maps is still loading. Please wait a moment and try again.")
-          setIsLoading(false)
-          return
-        }
-
-        const result = await geocodeAddressClient(address, city, state, zipCode)
-        console.log("[v0] Geocoding result:", result)
-
-        if (result.success) {
-          latitude = result.latitude
-          longitude = result.longitude
-
-          if (result.formattedAddress) {
-            finalAddress = result.formattedAddress.street
-            finalCity = result.formattedAddress.city
-            finalState = result.formattedAddress.state
-            finalZipCode = result.formattedAddress.zipCode
-
-            // Update form fields with standardized address
-            setAddress(finalAddress)
-            setCity(finalCity)
-            setState(finalState)
-            setZipCode(finalZipCode)
-
-            console.log("[v0] Address standardized to:", result.formattedAddress)
-          }
-
-          console.log("[v0] Address verified successfully:", { latitude, longitude })
-        } else {
-          setError(
-            "Unable to verify this address. Please check that the street address, city, state, and ZIP code are correct. You must provide a valid address to appear on the map.",
-          )
-          setIsLoading(false)
-          return
-        }
-      }
-
       const { error } = await supabase.from("suppliers").insert({
         user_id: userId,
         business_name: businessName,
@@ -110,14 +44,9 @@ export function SetupSupplierProfile({ userId }: SetupSupplierProfileProps) {
         description: description || null,
         email: email || null,
         phone: phone || null,
-        address: finalAddress || null,
-        city: finalCity || null,
-        state: finalState || null,
-        zip_code: finalZipCode || null,
-        latitude,
-        longitude,
         visible_to_buyers: visibleToBuyers,
         visible_to_brokers: visibleToBrokers,
+        delivery_available: deliveryAvailable,
       })
 
       if (error) throw error
@@ -134,7 +63,9 @@ export function SetupSupplierProfile({ userId }: SetupSupplierProfileProps) {
     <Card className="max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>Set Up Your Supplier Profile</CardTitle>
-        <CardDescription>Complete your business profile to start listing inventory</CardDescription>
+        <CardDescription>
+          Complete your business profile to start listing inventory. You'll add your location when creating inventory.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -179,54 +110,6 @@ export function SetupSupplierProfile({ userId }: SetupSupplierProfileProps) {
           </div>
 
           <div className="space-y-4 border-t pt-4">
-            <h3 className="font-semibold text-sm">Business Location</h3>
-            <p className="text-xs text-muted-foreground">
-              You must provide a valid address to appear on the map. Your address will be verified when you create your
-              profile.
-            </p>
-
-            <div className="grid gap-2">
-              <Label htmlFor="address">Street Address</Label>
-              <Input
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="123 Farm Road"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Tucson" required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  placeholder="AZ"
-                  required
-                  maxLength={2}
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="zip">ZIP Code</Label>
-              <Input
-                id="zip"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value)}
-                placeholder="85701"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4 border-t pt-4">
             <h3 className="font-semibold text-sm">Who do you want to see your offers?</h3>
             <p className="text-sm text-muted-foreground">Select who can view your inventory and contact you</p>
 
@@ -255,11 +138,26 @@ export function SetupSupplierProfile({ userId }: SetupSupplierProfileProps) {
             </div>
           </div>
 
-          {addressWarning && (
-            <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
-              <p className="text-sm text-amber-800">{addressWarning}</p>
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="font-semibold text-sm">Delivery Options</h3>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="delivery"
+                checked={deliveryAvailable}
+                onCheckedChange={(checked) => setDeliveryAvailable(checked === true)}
+              />
+              <Label htmlFor="delivery" className="text-sm font-normal cursor-pointer">
+                I offer delivery
+              </Label>
             </div>
-          )}
+          </div>
+
+          <div className="rounded-md bg-blue-50 border border-blue-200 p-3">
+            <p className="text-sm text-blue-800">
+              After creating your profile, you'll be able to add locations and inventory. Each location can have its own
+              address and inventory items.
+            </p>
+          </div>
 
           {error && (
             <div className="rounded-md bg-red-50 border border-red-200 p-3">
