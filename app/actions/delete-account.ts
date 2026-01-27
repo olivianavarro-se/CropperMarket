@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { cookies } from "next/headers"
 
 export async function deleteAccount() {
   const supabase = await createClient()
@@ -27,7 +28,6 @@ export async function deleteAccount() {
     // Delete profile
     await supabase.from("profiles").delete().eq("id", user.id)
 
-    const supabaseAdmin = await createClient()
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
     if (!serviceRoleKey) {
@@ -48,13 +48,15 @@ export async function deleteAccount() {
       throw new Error("Failed to delete auth user")
     }
 
-    // Sign out the user
-    try {
-      await supabase.auth.signOut()
-    } catch (error) {
-      // Ignore logout errors since user is already deleted from Auth
-      console.log("Logout after deletion (expected to fail):", error)
-    }
+    const cookieStore = await cookies()
+    const allCookies = cookieStore.getAll()
+
+    // Remove all Supabase auth cookies
+    allCookies.forEach((cookie) => {
+      if (cookie.name.includes("supabase") || cookie.name.includes("auth")) {
+        cookieStore.delete(cookie.name)
+      }
+    })
 
     return { success: true }
   } catch (error: any) {

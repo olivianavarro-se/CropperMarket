@@ -11,15 +11,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
+import Image from "next/image"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
   const [fullName, setFullName] = useState("")
-  const [userType, setUserType] = useState<"grower" | "broker" | "buyer">("buyer")
+  const [accountType, setAccountType] = useState<"grower" | "broker" | "buyer">("buyer")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false)
   const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -42,37 +46,56 @@ export default function SignUpPage() {
           emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
           data: {
             full_name: fullName,
-            user_type: userType,
+            account_type: accountType,
           },
         },
       })
       if (error) throw error
       router.push("/auth/sign-up-success")
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      if (error instanceof Error) {
+        if (error.message.includes("User already registered") || error.message.includes("already registered")) {
+          setError("This email is already registered. Please use a different email or try logging in.")
+        } else if (error.message.includes("Password should be at least 6 characters")) {
+          setError(
+            "Password must be at least 6 characters and include uppercase, lowercase, numbers, and special characters.",
+          )
+        } else {
+          setError(error.message)
+        }
+      } else {
+        setError("An error occurred")
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-3xl font-bold text-green-900">Cropper</h1>
-            <p className="text-sm text-green-700">Your Hay Market Platform</p>
+    <div className="flex min-h-screen w-full items-center justify-center p-4 md:p-6 bg-[#FAF8F5]">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col">
+          <div className="flex flex-col items-center gap-2 text-center mb-1">
+            <Image
+              src="/images/hay-20cropper.png"
+              alt="HayCropper Marketplace"
+              width={360}
+              height={270}
+              className="object-contain"
+            />
           </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Sign up</CardTitle>
-              <CardDescription>Create a new account</CardDescription>
+          <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
+            <CardHeader className="pb-1 space-y-0 pt-4 px-6">
+              <CardTitle className="text-xl text-[#65411C] font-bold mb-0.5">Create Account</CardTitle>
+              <CardDescription className="text-[#8A6842] text-base">Join the HayCropper marketplace</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-1 pb-2 px-6">
               <form onSubmit={handleSignUp}>
-                <div className="flex flex-col gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="full-name">Full Name</Label>
+                <div className="flex flex-col gap-4">
+                  <div className="grid gap-1">
+                    <Label htmlFor="full-name" className="text-[#65411C] text-sm">
+                      Full Name
+                    </Label>
                     <Input
                       id="full-name"
                       type="text"
@@ -80,10 +103,13 @@ export default function SignUpPage() {
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      className="border-[#D4AF8E] h-10 text-base"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
+                  <div className="grid gap-1">
+                    <Label htmlFor="email" className="text-[#65411C] text-sm">
+                      Email
+                    </Label>
                     <Input
                       id="email"
                       type="email"
@@ -91,15 +117,18 @@ export default function SignUpPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      className="border-[#D4AF8E] h-10 text-base"
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="user-type">Account Type</Label>
+                  <div className="grid gap-1">
+                    <Label htmlFor="account-type" className="text-[#65411C] text-sm">
+                      Account Type
+                    </Label>
                     <Select
-                      value={userType}
-                      onValueChange={(value: "grower" | "broker" | "buyer") => setUserType(value)}
+                      value={accountType}
+                      onValueChange={(value: "grower" | "broker" | "buyer") => setAccountType(value)}
                     >
-                      <SelectTrigger id="user-type">
+                      <SelectTrigger id="account-type" className="border-[#D4AF8E] h-10 text-base">
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -109,34 +138,65 @@ export default function SignUpPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
+                  <div className="grid gap-1">
+                    <Label htmlFor="password" className="text-[#65411C] text-sm">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="pr-10 border-[#D4AF8E] h-10 text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
+                      >
+                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="repeat-password">Repeat Password</Label>
-                    <Input
-                      id="repeat-password"
-                      type="password"
-                      required
-                      value={repeatPassword}
-                      onChange={(e) => setRepeatPassword(e.target.value)}
-                    />
+                  <div className="grid gap-1">
+                    <Label htmlFor="repeat-password" className="text-[#65411C] text-sm">
+                      Repeat Password
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="repeat-password"
+                        type={showRepeatPassword ? "text" : "password"}
+                        required
+                        value={repeatPassword}
+                        onChange={(e) => setRepeatPassword(e.target.value)}
+                        className="pr-10 border-[#D4AF8E] h-10 text-base"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRepeatPassword(!showRepeatPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
+                      >
+                        {showRepeatPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
                   </div>
                   {error && <p className="text-sm text-red-500">{error}</p>}
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold h-10 shadow-md hover:shadow-lg transition-all text-base"
+                    disabled={isLoading}
+                  >
                     {isLoading ? "Creating an account..." : "Sign up"}
                   </Button>
                 </div>
-                <div className="mt-4 text-center text-sm">
+                <div className="mt-2 text-center text-sm text-[#8A6842]">
                   Already have an account?{" "}
-                  <Link href="/auth/login" className="underline underline-offset-4">
+                  <Link
+                    href="/auth/login"
+                    className="text-[#F0B349] hover:text-[#FCE2A4] underline underline-offset-4 font-bold"
+                  >
                     Login
                   </Link>
                 </div>
