@@ -2,8 +2,8 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
-  full_name text,
-  user_type text not null check (user_type in ('public', 'supplier')),
+  full_name text not null,
+  account_type text not null default 'buyer' check (account_type in ('buyer', 'grower', 'broker')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

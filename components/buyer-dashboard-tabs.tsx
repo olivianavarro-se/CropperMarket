@@ -1,10 +1,12 @@
 "use client"
 
 import React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Calendar, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BuyerOrders } from "@/components/buyer-orders"
+import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 
 interface BuyerDashboardTabsProps {
   userId: string
@@ -25,6 +27,43 @@ const tabs: Tab[] = [
 
 export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("orders")
+  const [newOrdersCount, setNewOrdersCount] = useState(0)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchNewOrdersCount = async () => {
+      const { count } = await supabase
+        .from("order_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("buyer_id", userId)
+        .eq("status", "accepted")
+      
+      setNewOrdersCount(count || 0)
+    }
+
+    fetchNewOrdersCount()
+
+    // Subscribe to order changes
+    const channel = supabase
+      .channel("buyer-order-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_requests",
+          filter: `buyer_id=eq.${userId}`,
+        },
+        () => {
+          fetchNewOrdersCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [userId])
 
   return (
     <div className="flex gap-6">
@@ -48,6 +87,11 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
               >
                 <Icon className="h-5 w-5 shrink-0" />
                 <span className="font-medium">{tab.label}</span>
+                {tab.id === "orders" && newOrdersCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto">
+                    {newOrdersCount}
+                  </Badge>
+                )}
               </button>
             )
           })}

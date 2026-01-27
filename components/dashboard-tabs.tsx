@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Building2, MapPin, Calendar, ShoppingCart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Supplier, Location, Inventory } from "@/lib/types"
@@ -9,6 +9,8 @@ import { SupplierProfile } from "@/components/supplier-profile"
 import { LocationList } from "@/components/location-list"
 import { SupplierOrdersWrapper } from "@/components/supplier-orders-wrapper"
 import { SupplierOrders } from "@/components/supplier-orders" // Import SupplierOrders component
+import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 
 interface LocationWithInventory extends Location {
   inventory: Inventory[]
@@ -37,6 +39,43 @@ const tabs: Tab[] = [
 
 export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<TabId>("profile")
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(0)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      const { count } = await supabase
+        .from("order_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("supplier_id", supplier.id)
+        .eq("status", "pending")
+      
+      setPendingOrdersCount(count || 0)
+    }
+
+    fetchPendingCount()
+
+    // Subscribe to order changes
+    const channel = supabase
+      .channel("order-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "order_requests",
+          filter: `supplier_id=eq.${supplier.id}`,
+        },
+        () => {
+          fetchPendingCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      channel.unsubscribe()
+    }
+  }, [supplier.id])
 
   return (
     <div className="flex gap-6">
@@ -60,6 +99,11 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
               >
                 <Icon className="h-5 w-5 shrink-0" />
                 <span className="font-medium">{tab.label}</span>
+                {tab.id === "orders" && pendingOrdersCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto">
+                    {pendingOrdersCount}
+                  </Badge>
+                )}
               </button>
             )
           })}

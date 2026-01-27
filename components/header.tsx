@@ -50,11 +50,19 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (isMounted) {
-        setUser(session?.user ?? null)
-        if (!session?.user) {
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        
+        if (!currentUser) {
           setProfile(null)
+        } else {
+          // Fetch profile when user changes
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+          if (isMounted) {
+            setProfile(profile)
+          }
         }
       }
     })
@@ -70,7 +78,8 @@ export function Header() {
         },
         async (payload) => {
           // Update profile state when the profile is updated
-          if (payload.new && user && payload.new.id === user.id && isMounted) {
+          const currentUser = await supabase.auth.getUser()
+          if (payload.new && currentUser.data.user && payload.new.id === currentUser.data.user.id && isMounted) {
             setProfile(payload.new)
           }
         },
@@ -82,7 +91,7 @@ export function Header() {
       subscription.unsubscribe()
       profileChannel.unsubscribe()
     }
-  }, [user]) // Updated dependency array to useExhaustiveDependencies
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -120,23 +129,23 @@ export function Header() {
         <nav className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-[#8A6842]">Hello, {profile?.full_name || user.email}</span>
+              <span className="text-sm text-[#8A6842]">
+                Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
+              </span>
               <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
               <Button asChild variant={pathname === "/search" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/search">Search</Link>
               </Button>
-              {(profile?.account_type === "grower" || profile?.account_type === "broker" || profile?.account_type === "buyer") && (
-                <Button
-                  asChild
-                  variant={pathname === "/dashboard" ? "default" : "outline"}
-                  size="sm"
-                  className="shadow-sm"
-                >
-                  <Link href="/dashboard">My Dashboard</Link>
-                </Button>
-              )}
+              <Button
+                asChild
+                variant={pathname === "/dashboard" ? "default" : "outline"}
+                size="sm"
+                className="shadow-sm"
+              >
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
               <Button
                 asChild
                 variant={pathname === "/settings" ? "default" : "outline"}
