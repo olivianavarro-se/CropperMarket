@@ -35,6 +35,8 @@ export function Header() {
 
         if (user && isMounted) {
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+          console.log("[v0] Profile data loaded:", profile)
+          console.log("[v0] Full name from profile:", profile?.full_name)
           if (isMounted) {
             setProfile(profile)
           }
