@@ -6,13 +6,12 @@ security definer
 set search_path = public
 as $$
 begin
-  -- Updated to use account_type instead of user_type
-  insert into public.profiles (id, email, full_name, account_type)
+  insert into public.profiles (id, email, full_name, user_type)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data ->> 'full_name', ''),
-    coalesce(new.raw_user_meta_data ->> 'account_type', 'buyer')
+    coalesce(new.raw_user_meta_data ->> 'user_type', 'public')
   )
   on conflict (id) do nothing;
 

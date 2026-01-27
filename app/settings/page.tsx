@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   // Get supplier data if user is a grower or broker
   let supplier = null
-  if (profile?.account_type === "grower" || profile?.account_type === "broker") {
+  if (profile?.user_type === "grower" || profile?.user_type === "broker") {
     const { data } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()
     supplier = data
   }

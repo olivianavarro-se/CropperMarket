@@ -8,14 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { LocationWithSupplier } from "@/lib/types"
+import type { Supplier, Inventory } from "@/lib/types"
 import { HAY_TYPES } from "@/lib/hay-types"
 import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 
+type SupplierWithInventory = Supplier & {
+  inventory: Inventory[]
+}
+
 export function SearchInterface({
-  locations,
+  suppliers,
   isAuthenticated = false,
-}: { locations: LocationWithSupplier[]; isAuthenticated?: boolean }) {
+}: { suppliers: SupplierWithInventory[]; isAuthenticated?: boolean }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [showFilters, setShowFilters] = useState(true)
   const [filters, setFilters] = useState<{
@@ -28,7 +32,6 @@ export function SearchInterface({
     zipCode: string
     minPrice: string
     maxPrice: string
-    sellingUnits: string[]
   }>({
     type: "all",
     hasInventory: false,
@@ -39,62 +42,48 @@ export function SearchInterface({
     zipCode: "",
     minPrice: "",
     maxPrice: "",
-    sellingUnits: [],
   })
 
   const router = useRouter()
 
-  const availableCities = [...new Set(locations.map((l) => l.city).filter(Boolean))].sort()
-  const availableStates = [...new Set(locations.map((l) => l.state).filter(Boolean))].sort()
+  const availableCities = [...new Set(suppliers.map((s) => s.city).filter(Boolean))].sort()
+  const availableStates = [...new Set(suppliers.map((s) => s.state).filter(Boolean))].sort()
 
   const filteredResults = useMemo(() => {
-    return locations
-      .filter((location) => {
-        const supplier = location.supplier
-
+    return suppliers
+      .filter((supplier) => {
         const matchesSearch =
           supplier.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.zip_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          location.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.state?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.zip_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          supplier.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           supplier.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (location.inventory &&
-            location.inventory.some((item) => item.product_name.toLowerCase().includes(searchTerm.toLowerCase())))
+          (supplier.inventory &&
+            supplier.inventory.some((item) => item.product_name.toLowerCase().includes(searchTerm.toLowerCase())))
 
         const matchesType = filters.type === "all" || supplier.supplier_type === filters.type
-        const matchesInventory = !filters.hasInventory || (location.inventory && location.inventory.length > 0)
+        const matchesInventory = !filters.hasInventory || (supplier.inventory && supplier.inventory.length > 0)
         const matchesDelivery =
           !filters.deliveryAvailable ||
-          (location.inventory && location.inventory.some((item) => item.delivery_available))
+          (supplier.inventory && supplier.inventory.some((item) => item.delivery_available))
 
-        const matchesCities = filters.cities.length === 0 || (location.city && filters.cities.includes(location.city))
-        const matchesStates = filters.states.length === 0 || (location.state && filters.states.includes(location.state))
+        const matchesCities = filters.cities.length === 0 || (supplier.city && filters.cities.includes(supplier.city))
+        const matchesStates = filters.states.length === 0 || (supplier.state && filters.states.includes(supplier.state))
 
-        const matchesZipCode = !filters.zipCode || location.zip_code?.includes(filters.zipCode)
+        const matchesZipCode = !filters.zipCode || supplier.zip_code?.includes(filters.zipCode)
 
         const matchesHayType =
           filters.hayTypes.length === 0 ||
-          (location.inventory && location.inventory.some((item) => filters.hayTypes.includes(item.product_name)))
-
-        const matchesSellingUnit =
-          filters.sellingUnits.length === 0 ||
-          (location.inventory &&
-            location.inventory.some((item) => {
-              if (item.pricing_options && item.pricing_options.length > 0) {
-                return item.pricing_options.some((option) => filters.sellingUnits.includes(option.unit))
-              }
-              return item.selling_unit && filters.sellingUnits.includes(item.selling_unit)
-            }))
+          (supplier.inventory && supplier.inventory.some((item) => filters.hayTypes.includes(item.product_name)))
 
         const minPrice = filters.minPrice ? Number.parseFloat(filters.minPrice) : 0
         const maxPrice = filters.maxPrice ? Number.parseFloat(filters.maxPrice) : Number.POSITIVE_INFINITY
         const matchesPriceRange =
           (!filters.minPrice && !filters.maxPrice) ||
-          (location.inventory &&
-            location.inventory.some((item) => {
-              const price = Number.parseFloat(String(item.price_per_unit))
+          (supplier.inventory &&
+            supplier.inventory.some((item) => {
+              const price = Number.parseFloat(item.price_per_unit)
               return price >= minPrice && price <= maxPrice
             }))
 
@@ -107,11 +96,10 @@ export function SearchInterface({
           matchesStates &&
           matchesZipCode &&
           matchesHayType &&
-          matchesPriceRange &&
-          matchesSellingUnit
+          matchesPriceRange
         )
       })
-      .map((location) => {
+      .map((supplier) => {
         // If no filters are active and no search term, show all inventory
         if (
           !searchTerm &&
@@ -120,35 +108,35 @@ export function SearchInterface({
           !filters.maxPrice &&
           !filters.deliveryAvailable
         ) {
-          return location
+          return supplier
         }
 
         // Filter inventory items based on search term and active filters
-        const filteredInventory = location.inventory.filter((item) => {
+        const filteredInventory = supplier.inventory.filter((item) => {
+          // Match search term against product name
           const matchesSearchTerm = !searchTerm || item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-          const matchesHayType = filters.hayTypes.length === 0 || filters.hayTypes.includes(item.product_name)
 
-          const matchesSellingUnit =
-            filters.sellingUnits.length === 0 || filters.sellingUnits.includes(item.selling_unit || "")
+          const matchesHayType = filters.hayTypes.length === 0 || filters.hayTypes.includes(item.product_name)
 
           const minPrice = filters.minPrice ? Number.parseFloat(filters.minPrice) : 0
           const maxPrice = filters.maxPrice ? Number.parseFloat(filters.maxPrice) : Number.POSITIVE_INFINITY
-          const price = Number.parseFloat(String(item.price_per_unit))
+          const price = Number.parseFloat(item.price_per_unit)
           const matchesPrice = price >= minPrice && price <= maxPrice
 
           const matchesDelivery = !filters.deliveryAvailable || item.delivery_available
 
-          return matchesSearchTerm && matchesHayType && matchesSellingUnit && matchesPrice && matchesDelivery
+          return matchesSearchTerm && matchesHayType && matchesPrice && matchesDelivery
         })
 
+        // Return supplier with filtered inventory
         return {
-          ...location,
+          ...supplier,
           inventory: filteredInventory,
         }
       })
-  }, [searchTerm, filters, locations])
+  }, [searchTerm, filters, suppliers])
 
-  const toggleFilter = (type: "cities" | "states" | "hayTypes" | "sellingUnits", value: string) => {
+  const toggleFilter = (type: "cities" | "states" | "hayTypes", value: string) => {
     setFilters((prev) => ({
       ...prev,
       [type]: prev[type].includes(value) ? prev[type].filter((v) => v !== value) : [...prev[type], value],
@@ -166,7 +154,6 @@ export function SearchInterface({
       zipCode: "",
       minPrice: "",
       maxPrice: "",
-      sellingUnits: [],
     })
     setSearchTerm("")
   }
@@ -180,7 +167,6 @@ export function SearchInterface({
     filters.hayTypes.length,
     filters.zipCode ? 1 : 0,
     filters.minPrice || filters.maxPrice ? 1 : 0,
-    filters.sellingUnits.length,
   ].reduce((a, b) => a + b, 0)
 
   const handleEmailClick = (e: React.MouseEvent, email: string, businessName: string) => {
@@ -206,7 +192,7 @@ export function SearchInterface({
       {/* Search Bar */}
       <div className="mb-8">
         <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent">
-          Search Locations
+          Search Suppliers
         </h2>
         <div className="flex gap-2">
           <div className="flex-1 relative">
@@ -284,28 +270,6 @@ export function SearchInterface({
                   </div>
                 </div>
 
-                {/* Selling Unit Filter */}
-                <div>
-                  <h4 className="font-semibold text-sm mb-2">Selling Unit</h4>
-                  <div className="space-y-2">
-                    {[
-                      { value: "tons", label: "Tons" },
-                      { value: "small_bales", label: "Small Bales" },
-                      { value: "large_bales", label: "Large Bales" },
-                    ].map((unit) => (
-                      <label key={unit.value} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={filters.sellingUnits.includes(unit.value)}
-                          onChange={() => toggleFilter("sellingUnits", unit.value)}
-                          className="w-4 h-4 accent-green-600"
-                        />
-                        <span className="text-sm">{unit.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
                 {/* ZIP Code Filter */}
                 <div>
                   <h4 className="font-semibold text-sm mb-2">ZIP Code</h4>
@@ -377,8 +341,8 @@ export function SearchInterface({
                         <label key={state} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={filters.states.includes(state as string)}
-                            onChange={() => toggleFilter("states", state as string)}
+                            checked={filters.states.includes(state)}
+                            onChange={() => toggleFilter("states", state)}
                             className="w-4 h-4 accent-green-600"
                           />
                           <span className="text-sm">{state}</span>
@@ -397,8 +361,8 @@ export function SearchInterface({
                         <label key={city} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={filters.cities.includes(city as string)}
-                            onChange={() => toggleFilter("cities", city as string)}
+                            checked={filters.cities.includes(city)}
+                            onChange={() => toggleFilter("cities", city)}
                             className="w-4 h-4 accent-green-600"
                           />
                           <span className="text-sm">{city}</span>
@@ -416,147 +380,142 @@ export function SearchInterface({
         <div className={showFilters ? "lg:col-span-3" : "lg:col-span-4"}>
           <div className="mb-4">
             <p className="text-sm text-muted-foreground">
-              Found <span className="font-semibold">{filteredResults.length}</span> location
+              Found <span className="font-semibold">{filteredResults.length}</span> supplier
               {filteredResults.length !== 1 ? "s" : ""}
             </p>
           </div>
 
           {filteredResults.length > 0 ? (
             <div className="space-y-4">
-              {filteredResults.map((location) => {
-                const supplier = location.supplier
-                return (
-                  <Card
-                    key={location.id}
-                    className="hover:shadow-xl transition-all duration-300 hover:scale-[1.01] cursor-pointer"
-                  >
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900">{supplier.business_name}</h3>
-                          <p className="text-sm text-gray-600">{location.name}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge
-                              variant={supplier.supplier_type === "broker" ? "default" : "secondary"}
-                              className="capitalize shadow-sm"
-                            >
-                              {supplier.supplier_type}
-                            </Badge>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {location.address}, {location.city}, {location.state} {location.zip_code}
-                            </p>
-                          </div>
+              {filteredResults.map((supplier) => (
+                <Card
+                  key={supplier.id}
+                  className="hover:shadow-xl transition-all duration-300 hover:scale-[1.01] cursor-pointer"
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900">{supplier.business_name}</h3>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge
+                            variant={supplier.supplier_type === "broker" ? "default" : "secondary"}
+                            className="capitalize shadow-sm"
+                          >
+                            {supplier.supplier_type}
+                          </Badge>
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            {supplier.address && `${supplier.address}, `}
+                            {supplier.city}, {supplier.state} {supplier.zip_code}
+                          </p>
                         </div>
                       </div>
+                    </div>
 
-                      {supplier.description && (
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{supplier.description}</p>
-                      )}
+                    {supplier.description && (
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{supplier.description}</p>
+                    )}
 
-                      {/* Inventory Section */}
-                      {location.inventory && location.inventory.length > 0 && (
-                        <div className="mb-4 pb-4 border-b">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Package className="w-4 h-4 text-green-600" />
-                            <h4 className="font-semibold text-sm">Available Products ({location.inventory.length})</h4>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {location.inventory.slice(0, 4).map((item) => (
-                              <div
-                                key={item.id}
-                                className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
-                              >
-                                <div>
-                                  <span className="font-medium">{item.product_name}</span>
-                                  {item.description && (
-                                    <span className="text-xs text-gray-500 block italic">{item.description}</span>
-                                  )}
+                    {/* Inventory Section */}
+                    {supplier.inventory && supplier.inventory.length > 0 && (
+                      <div className="mb-4 pb-4 border-b">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Package className="w-4 h-4 text-green-600" />
+                          <h4 className="font-semibold text-sm">Available Products ({supplier.inventory.length})</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {supplier.inventory.slice(0, 4).map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
+                            >
+                              <div>
+                                <span className="font-medium">{item.product_name}</span>
+                                <span className="text-xs text-gray-500 ml-1">
+                                  ({item.quantity} {getStockUnitLabel(item.stock_unit || "tons")})
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-right">
+                                  <span className="text-green-700 font-semibold">${item.price_per_unit}</span>
                                   <span className="text-xs text-gray-500 ml-1">
-                                    ({item.quantity} {getStockUnitLabel(item.stock_unit || "tons")})
+                                    {getSellingUnitLabel(item.selling_unit || "tons")}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="text-right">
-                                    {item.pricing_options && item.pricing_options.length > 0 ? (
-                                      <div className="space-y-0.5">
-                                        {item.pricing_options.map((option, idx) => (
-                                          <div key={idx}>
-                                            <span className="text-green-700 font-semibold">${option.price}</span>
-                                            <span className="text-xs text-gray-500 ml-1">
-                                              {getSellingUnitLabel(option.unit)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <>
-                                        <span className="text-green-700 font-semibold">${item.price_per_unit}</span>
-                                        <span className="text-xs text-gray-500 ml-1">
-                                          {getSellingUnitLabel(item.selling_unit || "tons")}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                  {item.delivery_available && (
-                                    <Badge variant="outline" className="text-xs">
-                                      Delivery
-                                    </Badge>
-                                  )}
-                                </div>
+                                {item.delivery_available && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Delivery
+                                  </Badge>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                          {location.inventory.length > 4 && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              +{location.inventory.length - 4} more products
-                            </p>
-                          )}
+                            </div>
+                          ))}
                         </div>
-                      )}
-
-                      {/* Contact Section */}
-                      <div className="flex flex-wrap gap-3">
-                        {isAuthenticated ? (
-                          <>
-                            {supplier.email && (
-                              <button
-                                onClick={(e) => handleEmailClick(e, supplier.email!, supplier.business_name)}
-                                className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
-                              >
-                                <Mail className="w-4 h-4" />
-                                {supplier.email}
-                              </button>
-                            )}
-                            {supplier.phone && (
-                              <button
-                                onClick={(e) => handlePhoneClick(e, supplier.phone!)}
-                                className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
-                              >
-                                <Phone className="w-4 h-4" />
-                                {supplier.phone}
-                              </button>
-                            )}
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Lock className="w-4 h-4" />
-                            <span>Sign in to view contact information</span>
-                          </div>
+                        {supplier.inventory.length > 4 && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            +{supplier.inventory.length - 4} more products
+                          </p>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
+                    )}
+
+                    {/* Contact Section */}
+                    <div className="flex flex-wrap gap-3">
+                      {isAuthenticated ? (
+                        <>
+                          {supplier.email && (
+                            <button
+                              onClick={(e) => handleEmailClick(e, supplier.email!, supplier.business_name)}
+                              className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
+                            >
+                              <Mail className="w-4 h-4" />
+                              Email
+                            </button>
+                          )}
+                          {supplier.phone && (
+                            <button
+                              onClick={(e) => handlePhoneClick(e, supplier.phone)}
+                              className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
+                            >
+                              <Phone className="w-4 h-4" />
+                              Call
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push("/auth/login")
+                          }}
+                          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors bg-gray-50 px-3 py-1.5 rounded"
+                        >
+                          <Lock className="w-4 h-4" />
+                          Sign in to view contact info
+                        </button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
-            <Card className="p-12 text-center">
-              <div className="text-6xl mb-4">🌾</div>
-              <h3 className="text-xl font-semibold mb-2">No locations found</h3>
-              <p className="text-muted-foreground">
-                Try adjusting your search or filters to find what you're looking for.
-              </p>
+            <Card className="shadow-md">
+              <CardContent className="pt-6 text-center py-12">
+                <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground mb-4">No suppliers found matching your criteria</p>
+                <div className="space-y-2">
+                  <p className="text-sm">Try:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>Adjusting your filters</li>
+                    <li>Searching with different keywords</li>
+                    <li>Clearing all filters to browse all suppliers</li>
+                  </ul>
+                </div>
+                <Button variant="outline" size="sm" onClick={clearAllFilters} className="mt-4 bg-transparent">
+                  Clear All Filters
+                </Button>
+              </CardContent>
             </Card>
           )}
         </div>

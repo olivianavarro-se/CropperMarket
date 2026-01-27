@@ -1,18 +1,13 @@
-export type AccountType = "grower" | "broker" | "buyer"
+export type UserType = "grower" | "broker" | "buyer"
 export type SupplierType = "broker" | "grower"
 export type StockUnit = "tons" | "large_bales" | "small_bales"
 export type SellingUnit = "tons" | "large_bales" | "small_bales"
-
-export interface PricingOption {
-  unit: SellingUnit
-  price: number
-}
 
 export interface Profile {
   id: string
   email: string
   full_name: string | null
-  account_type: AccountType
+  user_type: UserType
   created_at: string
   updated_at: string
 }
@@ -25,24 +20,14 @@ export interface Supplier {
   description: string | null
   phone: string | null
   email: string | null
-  visible_to_buyers: boolean
-  visible_to_brokers: boolean
-  delivery_available: boolean
-  logo_url: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface Location {
-  id: string
-  supplier_id: string
-  name: string
-  address: string
-  city: string
-  state: string
+  address: string | null
+  city: string | null
+  state: string | null
   zip_code: string | null
   latitude: number | null
   longitude: number | null
+  visible_to_buyers: boolean
+  visible_to_brokers: boolean
   created_at: string
   updated_at: string
 }
@@ -50,28 +35,16 @@ export interface Location {
 export interface Inventory {
   id: string
   supplier_id: string
-  location_id: string | null
   product_name: string
   quantity: number
   stock_unit: StockUnit
   selling_unit: SellingUnit
   price_per_unit: number
-  pricing_options: PricingOption[]
-  description: string | null
+  delivery_available: boolean
   created_at: string
   updated_at: string
 }
 
-export interface LocationWithInventory extends Location {
-  inventory: Inventory[]
-}
-
 export interface SupplierWithInventory extends Supplier {
-  inventory: Inventory[]
-  locations: LocationWithInventory[]
-}
-
-export interface LocationWithSupplier extends Location {
-  supplier: Supplier
   inventory: Inventory[]
 }
