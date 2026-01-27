@@ -120,23 +120,23 @@ export function Header() {
         <nav className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-[#8A6842]">Hello, {profile?.full_name || user.email}</span>
+              <span className="text-sm text-[#8A6842]">
+                Hello, {profile?.full_name || user.email?.split('@')[0] || 'User'}
+              </span>
               <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
               <Button asChild variant={pathname === "/search" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/search">Search</Link>
               </Button>
-              {(profile?.account_type === "grower" || profile?.account_type === "broker" || profile?.account_type === "buyer") && (
-                <Button
-                  asChild
-                  variant={pathname === "/dashboard" ? "default" : "outline"}
-                  size="sm"
-                  className="shadow-sm"
-                >
-                  <Link href="/dashboard">My Dashboard</Link>
-                </Button>
-              )}
+              <Button
+                asChild
+                variant={pathname === "/dashboard" ? "default" : "outline"}
+                size="sm"
+                className="shadow-sm"
+              >
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
               <Button
                 asChild
                 variant={pathname === "/settings" ? "default" : "outline"}
