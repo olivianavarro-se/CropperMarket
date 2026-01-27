@@ -15,15 +15,35 @@ export function Header() {
   const supabase = createClient()
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
+    let isMounted = true
 
-      if (user) {
-        const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-        setProfile(profile)
+    const getUser = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser()
+        
+        // Handle abort or unmount gracefully
+        if (!isMounted) return
+        if (error && error.message === "Auth session missing!") {
+          // Expected for non-logged-in users
+          return
+        }
+        
+        setUser(user)
+
+        if (user && isMounted) {
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+          if (isMounted) {
+            setProfile(profile)
+          }
+        }
+      } catch (err) {
+        // Silently handle abort errors (expected on unmount)
+        if (err instanceof Error && err.name === "AbortError") {
+          return
+        }
       }
     }
     getUser()
@@ -31,9 +51,11 @@ export function Header() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-      if (!session?.user) {
-        setProfile(null)
+      if (isMounted) {
+        setUser(session?.user ?? null)
+        if (!session?.user) {
+          setProfile(null)
+        }
       }
     })
 
@@ -48,7 +70,7 @@ export function Header() {
         },
         async (payload) => {
           // Update profile state when the profile is updated
-          if (payload.new && user && payload.new.id === user.id) {
+          if (payload.new && user && payload.new.id === user.id && isMounted) {
             setProfile(payload.new)
           }
         },
@@ -56,6 +78,7 @@ export function Header() {
       .subscribe()
 
     return () => {
+      isMounted = false
       subscription.unsubscribe()
       profileChannel.unsubscribe()
     }
