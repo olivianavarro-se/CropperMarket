@@ -10,6 +10,7 @@ import Image from "next/image"
 export function Header() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
@@ -28,6 +29,9 @@ export function Header() {
         if (!isMounted) return
         if (error && error.message === "Auth session missing!") {
           // Expected for non-logged-in users
+          if (isMounted) {
+            setIsLoadingProfile(false)
+          }
           return
         }
         
@@ -37,12 +41,18 @@ export function Header() {
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
           if (isMounted) {
             setProfile(profile)
+            setIsLoadingProfile(false)
           }
+        } else if (isMounted) {
+          setIsLoadingProfile(false)
         }
       } catch (err) {
         // Silently handle abort errors (expected on unmount)
         if (err instanceof Error && err.name === "AbortError") {
           return
+        }
+        if (isMounted) {
+          setIsLoadingProfile(false)
         }
       }
     }
@@ -57,11 +67,14 @@ export function Header() {
         
         if (!currentUser) {
           setProfile(null)
+          setIsLoadingProfile(false)
         } else {
           // Fetch profile when user changes
+          setIsLoadingProfile(true)
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
           if (isMounted) {
             setProfile(profile)
+            setIsLoadingProfile(false)
           }
         }
       }
@@ -129,9 +142,11 @@ export function Header() {
         <nav className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-[#8A6842]">
-                Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
-              </span>
+              {!isLoadingProfile && (
+                <span className="text-sm text-[#8A6842]">
+                  Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
+                </span>
+              )}
               <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
