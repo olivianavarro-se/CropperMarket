@@ -27,23 +27,25 @@ export function Header() {
         
         // Handle abort or unmount gracefully
         if (!isMounted) return
-        if (error && error.message === "Auth session missing!") {
-          // Expected for non-logged-in users
+        
+        // Handle various session errors - these are expected for non-logged-in users
+        if (error) {
           if (isMounted) {
             setIsLoadingProfile(false)
           }
           return
         }
         
-        setUser(user)
-
         if (user && isMounted) {
+          setUser(user)
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
           if (isMounted) {
             setProfile(profile)
             setIsLoadingProfile(false)
           }
         } else if (isMounted) {
+          setUser(null)
+          setProfile(null)
           setIsLoadingProfile(false)
         }
       } catch (err) {
@@ -52,6 +54,8 @@ export function Header() {
           return
         }
         if (isMounted) {
+          setUser(null)
+          setProfile(null)
           setIsLoadingProfile(false)
         }
       }
@@ -71,10 +75,17 @@ export function Header() {
         } else {
           // Fetch profile when user changes
           setIsLoadingProfile(true)
-          const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
-          if (isMounted) {
-            setProfile(profile)
-            setIsLoadingProfile(false)
+          try {
+            const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+            if (isMounted) {
+              setProfile(profile)
+              setIsLoadingProfile(false)
+            }
+          } catch (err) {
+            if (isMounted) {
+              setProfile(null)
+              setIsLoadingProfile(false)
+            }
           }
         }
       }
@@ -91,9 +102,13 @@ export function Header() {
         },
         async (payload) => {
           // Update profile state when the profile is updated
-          const currentUser = await supabase.auth.getUser()
-          if (payload.new && currentUser.data.user && payload.new.id === currentUser.data.user.id && isMounted) {
-            setProfile(payload.new)
+          try {
+            const { data: currentUserData } = await supabase.auth.getUser()
+            if (payload.new && currentUserData.user && payload.new.id === currentUserData.user.id && isMounted) {
+              setProfile(payload.new)
+            }
+          } catch (err) {
+            // Silently handle auth errors in real-time updates
           }
         },
       )
