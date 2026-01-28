@@ -69,14 +69,34 @@ export function MapView({
     let retryCount = 0
     const maxRetries = 50 // 5 seconds max wait
 
+    const waitForGoogleMaps = (): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const check = () => {
+          if (!isComponentMounted) {
+            resolve(false)
+            return
+          }
+          if (window.google?.maps?.Map) {
+            resolve(true)
+            return
+          }
+          if (retryCount < maxRetries) {
+            retryCount++
+            setTimeout(check, 100)
+          } else {
+            resolve(false)
+          }
+        }
+        check()
+      })
+    }
+
     const initMap = async () => {
       if (!isComponentMounted) return
 
-      if (!window.google?.maps?.Map) {
-        if (retryCount < maxRetries) {
-          retryCount++
-          setTimeout(initMap, 100)
-        } else {
+      const mapsReady = await waitForGoogleMaps()
+      if (!mapsReady || !isComponentMounted) {
+        if (isComponentMounted) {
           setMapsError("Google Maps failed to load")
         }
         return
@@ -86,7 +106,6 @@ export function MapView({
         const mapElement = document.getElementById("map")
         if (!mapElement || !isComponentMounted) return
 
-        setMapsLoaded(true)
         setMapsError(null)
 
         const initialCenter = DEFAULT_CENTER
@@ -102,7 +121,19 @@ export function MapView({
         }
 
         const mapInstance = new window.google.maps.Map(mapElement, mapOptions)
+        
+        // Wait for the map to be fully initialized
+        await new Promise<void>((resolve) => {
+          window.google.maps.event.addListenerOnce(mapInstance, "idle", () => {
+            resolve()
+          })
+          // Fallback timeout in case idle never fires
+          setTimeout(resolve, 2000)
+        })
 
+        if (!isComponentMounted) return
+        
+        setMapsLoaded(true)
         setMap(mapInstance)
 
         const locationsWithCoords = locations.filter((location) => {
@@ -175,9 +206,11 @@ export function MapView({
 
         setMarkers(newMarkers)
       } catch (error) {
-        console.error("Maps initialization error:", error)
-        setMapsError("Failed to initialize map")
-        setMapsLoaded(false)
+        if (isComponentMounted) {
+          console.error("Maps initialization error:", error)
+          setMapsError("Failed to initialize map")
+          setMapsLoaded(false)
+        }
       }
     }
 

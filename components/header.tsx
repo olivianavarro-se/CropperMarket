@@ -3,13 +3,15 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Image from "next/image"
 
 export function Header() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const userIdRef = useRef<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
@@ -17,51 +19,76 @@ export function Header() {
   useEffect(() => {
     let isMounted = true
 
-    const getUser = async () => {
+    // Reusable function to fetch and update profile
+    const fetchProfile = async (userId: string) => {
+      if (!isMounted) return null
       try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser()
+        const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single()
+        return profile
+      } catch {
+        return null
+      }
+    }
+
+    const getUser = async () => {
+      if (!isMounted) return
+      
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
         
-        // Handle abort or unmount gracefully
         if (!isMounted) return
-        if (error && error.message === "Auth session missing!") {
-          // Expected for non-logged-in users
+        
+        if (error || !user) {
+          setUser(null)
+          setProfile(null)
+          userIdRef.current = null
+          setIsLoadingProfile(false)
           return
         }
         
         setUser(user)
-
-        if (user && isMounted) {
-          const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-          if (isMounted) {
-            setProfile(profile)
-          }
+        userIdRef.current = user.id
+        const profile = await fetchProfile(user.id)
+        
+        if (isMounted) {
+          setProfile(profile)
+          setIsLoadingProfile(false)
         }
       } catch (err) {
-        // Silently handle abort errors (expected on unmount)
-        if (err instanceof Error && err.name === "AbortError") {
+        if (!isMounted) return
+        if (err instanceof Error && (err.name === "AbortError" || err.message.includes("aborted"))) {
           return
         }
+        setUser(null)
+        setProfile(null)
+        setIsLoadingProfile(false)
       }
     }
-    getUser()
+    
+    getUser().catch(() => {})
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (isMounted) {
-        const currentUser = session?.user ?? null
+      if (!isMounted) return
+      
+      const currentUser = session?.user ?? null
+      const currentUserId = currentUser?.id ?? null
+      
+      // Only update if the user actually changed
+      if (userIdRef.current !== currentUserId) {
+        userIdRef.current = currentUserId
         setUser(currentUser)
         
         if (!currentUser) {
           setProfile(null)
+          setIsLoadingProfile(false)
         } else {
-          // Fetch profile when user changes
-          const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+          setIsLoadingProfile(true)
+          const profile = await fetchProfile(currentUser.id)
           if (isMounted) {
             setProfile(profile)
+            setIsLoadingProfile(false)
           }
         }
       }
@@ -76,10 +103,9 @@ export function Header() {
           schema: "public",
           table: "profiles",
         },
-        async (payload) => {
-          // Update profile state when the profile is updated
-          const currentUser = await supabase.auth.getUser()
-          if (payload.new && currentUser.data.user && payload.new.id === currentUser.data.user.id && isMounted) {
+        (payload) => {
+          // Update profile if it matches current user
+          if (isMounted && payload.new && userIdRef.current === payload.new.id) {
             setProfile(payload.new)
           }
         },
@@ -94,20 +120,12 @@ export function Header() {
   }, [])
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-    setUser(null)
-    setProfile(null)
+    await supabase.auth.signOut()
     router.push("/")
-    setTimeout(() => {
-      window.location.href = "/"
-    }, 100)
   }
 
   const isHomePage = pathname === "/"
+  const isActive = (path: string) => pathname === path
 
   return (
     <header className="border-b bg-[#FFFDF8]/90 backdrop-blur-md shadow-sm z-10 sticky top-0 border-[#E8D5B5]">
@@ -129,38 +147,30 @@ export function Header() {
         <nav className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-sm text-[#8A6842]">
-                Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
-              </span>
-              <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
+              {!isLoadingProfile && (
+                <span className="text-sm text-[#8A6842]">
+                  Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
+                </span>
+              )}
+              <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
-              <Button asChild variant={pathname === "/search" ? "default" : "outline"} size="sm" className="shadow-sm">
+              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/search">Search</Link>
               </Button>
-              <Button
-                asChild
-                variant={pathname === "/dashboard" ? "default" : "outline"}
-                size="sm"
-                className="shadow-sm"
-              >
+              <Button asChild variant={isActive("/dashboard") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <Button
-                asChild
-                variant={pathname === "/settings" ? "default" : "outline"}
-                size="sm"
-                className="shadow-sm"
-              >
+              <Button asChild variant={isActive("/settings") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/settings">Account</Link>
               </Button>
             </>
           ) : (
             <>
-              <Button asChild variant={pathname === "/" ? "default" : "outline"} size="sm" className="shadow-sm">
+              <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
-              <Button asChild variant={pathname === "/search" ? "default" : "outline"} size="sm" className="shadow-sm">
+              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/search">Search</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
