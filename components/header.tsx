@@ -19,6 +19,8 @@ export function Header() {
     let isMounted = true
 
     const getUser = async () => {
+      if (!isMounted) return
+      
       try {
         const {
           data: { user },
@@ -31,6 +33,8 @@ export function Header() {
         // Handle various session errors - these are expected for non-logged-in users
         if (error) {
           if (isMounted) {
+            setUser(null)
+            setProfile(null)
             setIsLoadingProfile(false)
           }
           return
@@ -49,8 +53,9 @@ export function Header() {
           setIsLoadingProfile(false)
         }
       } catch (err) {
+        if (!isMounted) return
         // Silently handle abort errors (expected on unmount)
-        if (err instanceof Error && err.name === "AbortError") {
+        if (err instanceof Error && (err.name === "AbortError" || err.message.includes("aborted"))) {
           return
         }
         if (isMounted) {
@@ -60,7 +65,9 @@ export function Header() {
         }
       }
     }
-    getUser()
+    getUser().catch(() => {
+      // Catch any unhandled promise rejections
+    })
 
     const {
       data: { subscription },
@@ -101,6 +108,7 @@ export function Header() {
           table: "profiles",
         },
         async (payload) => {
+          if (!isMounted) return
           // Update profile state when the profile is updated
           try {
             const { data: currentUserData } = await supabase.auth.getUser()
@@ -109,6 +117,9 @@ export function Header() {
             }
           } catch (err) {
             // Silently handle auth errors in real-time updates
+            if (!isMounted || (err instanceof Error && (err.name === "AbortError" || err.message.includes("aborted")))) {
+              return
+            }
           }
         },
       )
