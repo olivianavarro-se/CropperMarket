@@ -74,24 +74,28 @@ export function Header() {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (isMounted) {
         const currentUser = session?.user ?? null
-        setUser(currentUser)
         
-        if (!currentUser) {
-          setProfile(null)
-          setIsLoadingProfile(false)
-        } else {
-          // Fetch profile when user changes
-          setIsLoadingProfile(true)
-          try {
-            const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
-            if (isMounted) {
-              setProfile(profile)
-              setIsLoadingProfile(false)
-            }
-          } catch (err) {
-            if (isMounted) {
-              setProfile(null)
-              setIsLoadingProfile(false)
+        // Only update if the user actually changed (not just auth state refresh)
+        if (user?.id !== currentUser?.id) {
+          setUser(currentUser)
+          
+          if (!currentUser) {
+            setProfile(null)
+            setIsLoadingProfile(false)
+          } else {
+            // Fetch profile when user changes
+            setIsLoadingProfile(true)
+            try {
+              const { data: profile } = await supabase.from("profiles").select("*").eq("id", currentUser.id).single()
+              if (isMounted) {
+                setProfile(profile)
+                setIsLoadingProfile(false)
+              }
+            } catch (err) {
+              if (isMounted) {
+                setProfile(null)
+                setIsLoadingProfile(false)
+              }
             }
           }
         }
