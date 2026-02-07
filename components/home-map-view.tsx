@@ -434,11 +434,11 @@ export function HomeMapView({ locations, isAuthenticated = false, userId }: Home
           <div className="flex gap-3 mt-4">
             <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-100">
               <div className="w-2.5 h-2.5 rounded-full bg-green-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-green-900">Broker</span>
+              <span className="text-xs font-semibold text-green-900">Grower</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 rounded-full border border-yellow-100">
               <div className="w-2.5 h-2.5 rounded-full bg-yellow-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-yellow-900">Grower</span>
+              <span className="text-xs font-semibold text-yellow-900">Broker</span>
             </div>
           </div>
         </div>
@@ -474,7 +474,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId }: Home
                       <div className="font-semibold text-base text-gray-900">{location.supplier.business_name}</div>
                       <div
                         className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
-                          location.supplier.supplier_type === "broker" ? "bg-green-600" : "bg-yellow-600"
+                          location.supplier.supplier_type === "broker" ? "bg-yellow-600" : "bg-green-600"
                         }`}
                       />
                     </div>
