@@ -161,7 +161,7 @@ export function MapView({
             pinElement.style.width = "20px"
             pinElement.style.height = "20px"
             pinElement.style.borderRadius = "50%"
-            pinElement.style.backgroundColor = location.supplier.supplier_type === "broker" ? "#16a34a" : "#ca8a04"
+            pinElement.style.backgroundColor = location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a"
             pinElement.style.border = "3px solid #ffffff"
             pinElement.style.cursor = "pointer"
 
@@ -185,7 +185,7 @@ export function MapView({
               title: `${location.supplier.business_name} - ${location.name}`,
               icon: {
                 path: window.google.maps.SymbolPath.CIRCLE,
-                fillColor: location.supplier.supplier_type === "broker" ? "#16a34a" : "#ca8a04",
+                fillColor: location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a",
                 fillOpacity: 1,
                 strokeColor: "#ffffff",
                 strokeWeight: 3,
