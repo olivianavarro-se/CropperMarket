@@ -131,7 +131,14 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               <CardTitle className="text-xl">Business Profile</CardTitle>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold text-primary">{supplier.business_name}</h3>
-                <Badge variant={supplier.supplier_type === "broker" ? "default" : "secondary"} className="text-xs">
+                <Badge 
+                  variant="outline"
+                  className={
+                    supplier.supplier_type === "broker" 
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-800 text-xs" 
+                      : "bg-green-50 border-green-200 text-green-800 text-xs"
+                  }
+                >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
               </div>

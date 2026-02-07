@@ -93,7 +93,14 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               <CardTitle className="text-xl mb-1">{supplier.business_name}</CardTitle>
               <p className="text-sm text-gray-600 mb-2">{location.name}</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={supplier.supplier_type === "broker" ? "default" : "secondary"} className="shadow-sm">
+                <Badge 
+                  variant="outline" 
+                  className={
+                    supplier.supplier_type === "broker" 
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-800 shadow-sm" 
+                      : "bg-green-50 border-green-200 text-green-800 shadow-sm"
+                  }
+                >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
                 {hasDelivery && (
