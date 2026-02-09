@@ -203,6 +203,33 @@ export function ContactSupplierDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {location.supplier.payment_methods && location.supplier.payment_methods.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Accepted Payment Methods</h4>
+              <div className="flex flex-wrap gap-2">
+                {location.supplier.payment_methods.map((method) => {
+                  const methodLabels: Record<string, string> = {
+                    cash: "Cash",
+                    credit: "Credit Card",
+                    debit: "Debit Card",
+                    zelle: "Zelle",
+                    venmo: "Venmo",
+                    check: "Check",
+                    apple_pay: "Apple Pay",
+                  }
+                  return (
+                    <span
+                      key={method}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-800"
+                    >
+                      {methodLabels[method] || method}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Package className="h-4 w-4" />

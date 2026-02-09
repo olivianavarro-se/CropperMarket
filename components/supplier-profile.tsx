@@ -28,6 +28,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
   const [phone, setPhone] = useState(supplier.phone || "")
   const [visibleToBuyers, setVisibleToBuyers] = useState(supplier.visible_to_buyers)
   const [visibleToBrokers, setVisibleToBrokers] = useState(supplier.visible_to_brokers)
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(supplier.payment_methods || [])
   const [logoUrl, setLogoUrl] = useState(supplier.logo_url || "")
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -77,6 +78,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
           phone: phone || null,
           visible_to_buyers: visibleToBuyers,
           visible_to_brokers: visibleToBrokers,
+          payment_methods: paymentMethods,
           logo_url: logoUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -104,6 +106,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
     setPhone(supplier.phone || "")
     setVisibleToBuyers(supplier.visible_to_buyers)
     setVisibleToBrokers(supplier.visible_to_brokers)
+    setPaymentMethods(supplier.payment_methods || [])
     setLogoUrl(supplier.logo_url || "")
     setLogoFile(null)
     setIsEditing(false)
@@ -257,7 +260,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               </div>
             </div>
 
-            <div className="border-t pt-3 space-y-2">
+            <div className="border-t pt-3 space-y-3">
               <div>
                 <h3 className="font-semibold text-sm mb-1.5">Offer Visibility</h3>
                 <div className="flex gap-4">
@@ -285,6 +288,37 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                 </div>
               </div>
 
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Accepted Payment Methods</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { value: "cash", label: "Cash" },
+                    { value: "credit", label: "Credit Card" },
+                    { value: "debit", label: "Debit Card" },
+                    { value: "zelle", label: "Zelle" },
+                    { value: "venmo", label: "Venmo" },
+                    { value: "check", label: "Check" },
+                    { value: "apple_pay", label: "Apple Pay" },
+                  ].map((method) => (
+                    <div key={method.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`payment-${method.value}`}
+                        checked={paymentMethods.includes(method.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setPaymentMethods([...paymentMethods, method.value])
+                          } else {
+                            setPaymentMethods(paymentMethods.filter((m) => m !== method.value))
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`payment-${method.value}`} className="text-sm font-normal cursor-pointer">
+                        {method.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {error && (
