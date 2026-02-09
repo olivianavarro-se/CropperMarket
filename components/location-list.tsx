@@ -62,6 +62,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
   const [editCity, setEditCity] = useState("")
   const [editState, setEditState] = useState("")
   const [editZipCode, setEditZipCode] = useState("")
+  const [editDeliveryAvailable, setEditDeliveryAvailable] = useState(false)
 
   // Inventory form state
   const [hayType, setHayType] = useState("")
@@ -105,6 +106,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setEditCity(location.city)
     setEditState(location.state)
     setEditZipCode(location.zip_code || "")
+    setEditDeliveryAvailable(location.delivery_available)
     setError(null)
   }
 
@@ -115,6 +117,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setEditCity("")
     setEditState("")
     setEditZipCode("")
+    setEditDeliveryAvailable(false)
     setError(null)
   }
 
@@ -164,6 +167,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
           zip_code: finalZipCode,
           latitude: result.latitude,
           longitude: result.longitude,
+          delivery_available: editDeliveryAvailable,
         })
         .eq("id", locationId)
 
@@ -517,6 +521,19 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                       </div>
                     </div>
 
+                    <div className="flex items-center gap-2 p-4 bg-card rounded-lg border">
+                      <input
+                        type="checkbox"
+                        id="edit-delivery"
+                        checked={editDeliveryAvailable}
+                        onChange={(e) => setEditDeliveryAvailable(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <Label htmlFor="edit-delivery" className="cursor-pointer font-normal">
+                        Delivery available from this location
+                      </Label>
+                    </div>
+
                     {error && (
                       <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
                         <p className="text-sm text-destructive">{error}</p>
@@ -541,12 +558,21 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <MapPin className="h-5 w-5 text-primary" />
                             <h3 className="font-semibold text-lg">{location.name}</h3>
                             <Badge variant="secondary" className="ml-2">
                               {location.inventory.length} {location.inventory.length === 1 ? "item" : "items"}
                             </Badge>
+                            {location.delivery_available ? (
+                              <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700">
+                                Delivery Available
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-50 border-gray-200 text-gray-600">
+                                No Delivery
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {location.address}, {location.city}, {location.state} {location.zip_code}

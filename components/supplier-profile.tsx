@@ -28,7 +28,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
   const [phone, setPhone] = useState(supplier.phone || "")
   const [visibleToBuyers, setVisibleToBuyers] = useState(supplier.visible_to_buyers)
   const [visibleToBrokers, setVisibleToBrokers] = useState(supplier.visible_to_brokers)
-  const [deliveryAvailable, setDeliveryAvailable] = useState(supplier.delivery_available)
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(supplier.payment_methods || [])
   const [logoUrl, setLogoUrl] = useState(supplier.logo_url || "")
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -78,7 +78,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
           phone: phone || null,
           visible_to_buyers: visibleToBuyers,
           visible_to_brokers: visibleToBrokers,
-          delivery_available: deliveryAvailable,
+          payment_methods: paymentMethods,
           logo_url: logoUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -106,7 +106,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
     setPhone(supplier.phone || "")
     setVisibleToBuyers(supplier.visible_to_buyers)
     setVisibleToBrokers(supplier.visible_to_brokers)
-    setDeliveryAvailable(supplier.delivery_available)
+    setPaymentMethods(supplier.payment_methods || [])
     setLogoUrl(supplier.logo_url || "")
     setLogoFile(null)
     setIsEditing(false)
@@ -131,7 +131,14 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               <CardTitle className="text-xl">Business Profile</CardTitle>
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold text-primary">{supplier.business_name}</h3>
-                <Badge variant={supplier.supplier_type === "broker" ? "default" : "secondary"} className="text-xs">
+                <Badge 
+                  variant="outline"
+                  className={
+                    supplier.supplier_type === "broker" 
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-800 text-xs" 
+                      : "bg-green-50 border-green-200 text-green-800 text-xs"
+                  }
+                >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
               </div>
@@ -253,7 +260,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               </div>
             </div>
 
-            <div className="border-t pt-3 space-y-2">
+            <div className="border-t pt-3 space-y-3">
               <div>
                 <h3 className="font-semibold text-sm mb-1.5">Offer Visibility</h3>
                 <div className="flex gap-4">
@@ -282,16 +289,34 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               </div>
 
               <div>
-                <h3 className="font-semibold text-sm mb-1.5">Delivery</h3>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-delivery"
-                    checked={deliveryAvailable}
-                    onCheckedChange={(checked) => setDeliveryAvailable(checked === true)}
-                  />
-                  <Label htmlFor="edit-delivery" className="text-sm font-normal cursor-pointer">
-                    I offer delivery
-                  </Label>
+                <h3 className="font-semibold text-sm mb-2">Accepted Payment Methods</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { value: "cash", label: "Cash" },
+                    { value: "credit", label: "Credit Card" },
+                    { value: "debit", label: "Debit Card" },
+                    { value: "zelle", label: "Zelle" },
+                    { value: "venmo", label: "Venmo" },
+                    { value: "check", label: "Check" },
+                    { value: "apple_pay", label: "Apple Pay" },
+                  ].map((method) => (
+                    <div key={method.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`payment-${method.value}`}
+                        checked={paymentMethods.includes(method.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setPaymentMethods([...paymentMethods, method.value])
+                          } else {
+                            setPaymentMethods(paymentMethods.filter((m) => m !== method.value))
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`payment-${method.value}`} className="text-sm font-normal cursor-pointer">
+                        {method.label}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -317,32 +342,53 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                   <span>{supplier.phone}</span>
                 </div>
               )}
-              {supplier.delivery_available && (
-                <div className="flex items-center gap-1.5 text-green-700">
-                  <Truck className="h-4 w-4" />
-                  <span>Delivery Available</span>
-                </div>
-              )}
             </div>
 
-            <div className="border-t pt-2">
-              <div className="flex flex-wrap gap-1.5">
-                {supplier.visible_to_buyers && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                    Visible to Buyers
-                  </Badge>
-                )}
-                {supplier.visible_to_brokers && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                    Visible to Brokers
-                  </Badge>
-                )}
-                {!supplier.visible_to_buyers && !supplier.visible_to_brokers && (
-                  <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
-                    Not Visible
-                  </Badge>
-                )}
+            <div className="border-t pt-2 space-y-3">
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Visibility</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {supplier.visible_to_buyers && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                      Visible to Buyers
+                    </Badge>
+                  )}
+                  {supplier.visible_to_brokers && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                      Visible to Brokers
+                    </Badge>
+                  )}
+                  {!supplier.visible_to_buyers && !supplier.visible_to_brokers && (
+                    <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
+                      Not Visible
+                    </Badge>
+                  )}
+                </div>
               </div>
+
+              {supplier.payment_methods && supplier.payment_methods.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Accepted Payment Methods</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {supplier.payment_methods.map((method) => {
+                      const methodLabels: Record<string, string> = {
+                        cash: "Cash",
+                        credit: "Credit Card",
+                        debit: "Debit Card",
+                        zelle: "Zelle",
+                        venmo: "Venmo",
+                        check: "Check",
+                        apple_pay: "Apple Pay",
+                      }
+                      return (
+                        <Badge key={method} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                          {methodLabels[method] || method}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

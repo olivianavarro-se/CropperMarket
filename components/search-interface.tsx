@@ -437,8 +437,12 @@ export function SearchInterface({
                           <p className="text-sm text-gray-600">{location.name}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <Badge
-                              variant={supplier.supplier_type === "broker" ? "default" : "secondary"}
-                              className="capitalize shadow-sm"
+                              variant={supplier.supplier_type === "broker" ? "outline" : "outline"}
+                              className={
+                                supplier.supplier_type === "broker" 
+                                  ? "bg-yellow-50 border-yellow-200 text-yellow-800 capitalize shadow-sm" 
+                                  : "bg-green-50 border-green-200 text-green-800 capitalize shadow-sm"
+                              }
                             >
                               {supplier.supplier_type}
                             </Badge>

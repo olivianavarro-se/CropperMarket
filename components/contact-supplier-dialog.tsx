@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -28,7 +28,7 @@ interface ContactSupplierDialogProps {
 
 interface SelectedItem {
   inventoryId: string
-  quantity: number
+  quantity: number | null
   pricingOptionIndex?: number
 }
 
@@ -46,19 +46,29 @@ export function ContactSupplierDialog({
 
   const supabase = createClient()
 
+  // Reset all state whenever the dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedItems([])
+      setMessage("")
+      setIsSuccess(false)
+      setError(null)
+    }
+  }, [open])
+
   const handleItemToggle = (inventoryId: string, checked: boolean) => {
     if (checked) {
-      setSelectedItems([...selectedItems, { inventoryId, quantity: 1 }])
+      setSelectedItems([...selectedItems, { inventoryId, quantity: null }])
     } else {
       setSelectedItems(selectedItems.filter((item) => item.inventoryId !== inventoryId))
     }
   }
 
-  const handleQuantityChange = (inventoryId: string, quantity: number, maxAvailable: number) => {
+  const handleQuantityChange = (inventoryId: string, quantity: number | null, maxAvailable: number) => {
     setSelectedItems(
       selectedItems.map((item) =>
         item.inventoryId === inventoryId 
-          ? { ...item, quantity: Math.max(1, Math.min(quantity, maxAvailable)) } 
+          ? { ...item, quantity: quantity === null ? null : Math.min(quantity, maxAvailable) } 
           : item
       )
     )
@@ -80,9 +90,30 @@ export function ContactSupplierDialog({
     return selectedItems.find((item) => item.inventoryId === inventoryId)
   }
 
+  const calculateTotal = () => {
+    return selectedItems.reduce((total, selected) => {
+      const inventory = location.inventory.find((inv) => inv.id === selected.inventoryId)
+      if (!inventory || !selected.quantity) return total
+
+      const pricingOption =
+        inventory.pricing_options && inventory.pricing_options.length > 0
+          ? inventory.pricing_options[selected.pricingOptionIndex || 0]
+          : { unit: inventory.selling_unit, price: inventory.price_per_unit }
+
+      return total + pricingOption.price * selected.quantity
+    }, 0)
+  }
+
   const handleSubmit = async () => {
     if (selectedItems.length === 0) {
-      setError("Please select at least one item to request")
+      setError("Please select at least one item")
+      return
+    }
+
+    // Validate all selected items have valid quantities
+    const invalidItems = selectedItems.filter(item => !item.quantity || item.quantity < 1)
+    if (invalidItems.length > 0) {
+      setError("Please enter a valid quantity for all selected items")
       return
     }
 
@@ -172,6 +203,33 @@ export function ContactSupplierDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {location.supplier.payment_methods && location.supplier.payment_methods.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h4 className="text-sm font-semibold text-gray-900 mb-2">Accepted Payment Methods</h4>
+              <div className="flex flex-wrap gap-2">
+                {location.supplier.payment_methods.map((method) => {
+                  const methodLabels: Record<string, string> = {
+                    cash: "Cash",
+                    credit: "Credit Card",
+                    debit: "Debit Card",
+                    zelle: "Zelle",
+                    venmo: "Venmo",
+                    check: "Check",
+                    apple_pay: "Apple Pay",
+                  }
+                  return (
+                    <span
+                      key={method}
+                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white border border-blue-300 text-blue-800"
+                    >
+                      {methodLabels[method] || method}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Package className="h-4 w-4" />
@@ -253,13 +311,29 @@ export function ContactSupplierDialog({
                               </Label>
                               <Input
                                 id={`qty-${item.id}`}
-                                type="number"
-                                min="1"
-                                max={item.quantity}
-                                value={selectedItem?.quantity || 1}
-                                onChange={(e) =>
-                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.quantity)
-                                }
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="Enter qty"
+                                value={selectedItem?.quantity === null ? '' : selectedItem?.quantity}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  // Allow empty field during typing
+                                  if (value === '') {
+                                    handleQuantityChange(item.id, null, item.quantity)
+                                    return
+                                  }
+                                  const numValue = parseInt(value)
+                                  if (!isNaN(numValue) && numValue > 0) {
+                                    handleQuantityChange(item.id, numValue, item.quantity)
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // If field is empty on blur, set to 1
+                                  if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                                    handleQuantityChange(item.id, 1, item.quantity)
+                                  }
+                                }}
                                 className="w-20 h-8 text-sm"
                               />
                               <span className="text-xs text-gray-500">
@@ -288,6 +362,18 @@ export function ContactSupplierDialog({
               rows={3}
             />
           </div>
+
+          {selectedItems.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Estimated Total Cost:</span>
+                <span className="text-lg font-semibold text-blue-600">${calculateTotal().toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                This is an estimate based on {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""} and current pricing.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>

@@ -17,6 +17,8 @@ export interface Profile {
   updated_at: string
 }
 
+export type PaymentMethod = "cash" | "credit" | "debit" | "zelle" | "venmo" | "check" | "apple_pay"
+
 export interface Supplier {
   id: string
   user_id: string
@@ -28,6 +30,7 @@ export interface Supplier {
   visible_to_buyers: boolean
   visible_to_brokers: boolean
   delivery_available: boolean
+  payment_methods: PaymentMethod[]
   logo_url: string | null
   created_at: string
   updated_at: string
@@ -43,6 +46,7 @@ export interface Location {
   zip_code: string | null
   latitude: number | null
   longitude: number | null
+  delivery_available: boolean
   created_at: string
   updated_at: string
 }

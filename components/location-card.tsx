@@ -93,7 +93,14 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               <CardTitle className="text-xl mb-1">{supplier.business_name}</CardTitle>
               <p className="text-sm text-gray-600 mb-2">{location.name}</p>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={supplier.supplier_type === "broker" ? "default" : "secondary"} className="shadow-sm">
+                <Badge 
+                  variant="outline" 
+                  className={
+                    supplier.supplier_type === "broker" 
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-800 shadow-sm" 
+                      : "bg-green-50 border-green-200 text-green-800 shadow-sm"
+                  }
+                >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
                 {hasDelivery && (
@@ -150,9 +157,21 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
         )}
 
         <div className="border-t pt-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Package className="h-4 w-4" />
-            <h3 className="font-semibold">Inventory at this Location</h3>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Package className="h-4 w-4" />
+                <h3 className="font-semibold">Inventory at this Location</h3>
+              </div>
+              <div className="flex items-center gap-3 ml-6">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${location.delivery_available ? (supplier.supplier_type === "broker" ? "bg-yellow-500" : "bg-green-600") : "bg-gray-400"}`}></div>
+                  <span className="text-xs text-gray-600">
+                    {location.delivery_available ? "Delivery Available" : "No Delivery"}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {filteredInventory.length > 0 ? (
