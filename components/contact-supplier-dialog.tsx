@@ -76,8 +76,18 @@ export function ContactSupplierDialog({
     return selectedItems.some((item) => item.inventoryId === inventoryId)
   }
 
-  const getSelectedItem = (inventoryId: string) => {
-    return selectedItems.find((item) => item.inventoryId === inventoryId)
+  const calculateTotal = () => {
+    return selectedItems.reduce((total, selected) => {
+      const inventory = location.inventory.find((inv) => inv.id === selected.inventoryId)
+      if (!inventory) return total
+
+      const pricingOption =
+        inventory.pricing_options && inventory.pricing_options.length > 0
+          ? inventory.pricing_options[selected.pricingOptionIndex || 0]
+          : { unit: inventory.selling_unit, price: inventory.price_per_unit }
+
+      return total + pricingOption.price * selected.quantity
+    }, 0)
   }
 
   const handleSubmit = async () => {
@@ -288,6 +298,18 @@ export function ContactSupplierDialog({
               rows={3}
             />
           </div>
+
+          {selectedItems.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Estimated Total Cost:</span>
+                <span className="text-lg font-semibold text-blue-600">${calculateTotal().toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                This is an estimate based on {selectedItems.length} selected item{selectedItems.length !== 1 ? "s" : ""} and current pricing.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</div>
