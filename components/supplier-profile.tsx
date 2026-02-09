@@ -344,24 +344,51 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
               )}
             </div>
 
-            <div className="border-t pt-2">
-              <div className="flex flex-wrap gap-1.5">
-                {supplier.visible_to_buyers && (
-                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                    Visible to Buyers
-                  </Badge>
-                )}
-                {supplier.visible_to_brokers && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                    Visible to Brokers
-                  </Badge>
-                )}
-                {!supplier.visible_to_buyers && !supplier.visible_to_brokers && (
-                  <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
-                    Not Visible
-                  </Badge>
-                )}
+            <div className="border-t pt-2 space-y-3">
+              <div>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Visibility</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {supplier.visible_to_buyers && (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                      Visible to Buyers
+                    </Badge>
+                  )}
+                  {supplier.visible_to_brokers && (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                      Visible to Brokers
+                    </Badge>
+                  )}
+                  {!supplier.visible_to_buyers && !supplier.visible_to_brokers && (
+                    <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-xs">
+                      Not Visible
+                    </Badge>
+                  )}
+                </div>
               </div>
+
+              {supplier.payment_methods && supplier.payment_methods.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Accepted Payment Methods</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {supplier.payment_methods.map((method) => {
+                      const methodLabels: Record<string, string> = {
+                        cash: "Cash",
+                        credit: "Credit Card",
+                        debit: "Debit Card",
+                        zelle: "Zelle",
+                        venmo: "Venmo",
+                        check: "Check",
+                        apple_pay: "Apple Pay",
+                      }
+                      return (
+                        <Badge key={method} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                          {methodLabels[method] || method}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
