@@ -43,6 +43,7 @@ export interface Location {
   zip_code: string | null
   latitude: number | null
   longitude: number | null
+  delivery_available: boolean
   created_at: string
   updated_at: string
 }

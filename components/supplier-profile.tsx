@@ -28,7 +28,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
   const [phone, setPhone] = useState(supplier.phone || "")
   const [visibleToBuyers, setVisibleToBuyers] = useState(supplier.visible_to_buyers)
   const [visibleToBrokers, setVisibleToBrokers] = useState(supplier.visible_to_brokers)
-  const [deliveryAvailable, setDeliveryAvailable] = useState(supplier.delivery_available)
   const [logoUrl, setLogoUrl] = useState(supplier.logo_url || "")
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -78,7 +77,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
           phone: phone || null,
           visible_to_buyers: visibleToBuyers,
           visible_to_brokers: visibleToBrokers,
-          delivery_available: deliveryAvailable,
           logo_url: logoUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -106,7 +104,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
     setPhone(supplier.phone || "")
     setVisibleToBuyers(supplier.visible_to_buyers)
     setVisibleToBrokers(supplier.visible_to_brokers)
-    setDeliveryAvailable(supplier.delivery_available)
     setLogoUrl(supplier.logo_url || "")
     setLogoFile(null)
     setIsEditing(false)
@@ -288,19 +285,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                 </div>
               </div>
 
-              <div>
-                <h3 className="font-semibold text-sm mb-1.5">Delivery</h3>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="edit-delivery"
-                    checked={deliveryAvailable}
-                    onCheckedChange={(checked) => setDeliveryAvailable(checked === true)}
-                  />
-                  <Label htmlFor="edit-delivery" className="text-sm font-normal cursor-pointer">
-                    I offer delivery
-                  </Label>
-                </div>
-              </div>
             </div>
 
             {error && (
@@ -322,12 +306,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                 <div className="flex items-center gap-1.5">
                   <Phone className="h-4 w-4" />
                   <span>{supplier.phone}</span>
-                </div>
-              )}
-              {supplier.delivery_available && (
-                <div className="flex items-center gap-1.5 text-green-700">
-                  <Truck className="h-4 w-4" />
-                  <span>Delivery Available</span>
                 </div>
               )}
             </div>

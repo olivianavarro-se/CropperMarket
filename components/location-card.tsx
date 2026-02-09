@@ -165,9 +165,9 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               </div>
               <div className="flex items-center gap-3 ml-6">
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${supplier.supplier_type === "broker" ? "bg-yellow-500" : "bg-green-600"}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${location.delivery_available ? (supplier.supplier_type === "broker" ? "bg-yellow-500" : "bg-green-600") : "bg-gray-400"}`}></div>
                   <span className="text-xs text-gray-600">
-                    {supplier.delivery_available ? "Delivery Available" : "No Delivery"}
+                    {location.delivery_available ? "Delivery Available" : "No Delivery"}
                   </span>
                 </div>
               </div>
