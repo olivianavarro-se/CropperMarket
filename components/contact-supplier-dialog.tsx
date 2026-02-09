@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
@@ -28,7 +28,7 @@ interface ContactSupplierDialogProps {
 
 interface SelectedItem {
   inventoryId: string
-  quantity: number
+  quantity: number | null
   pricingOptionIndex?: number
 }
 
@@ -46,19 +46,29 @@ export function ContactSupplierDialog({
 
   const supabase = createClient()
 
+  // Reset all state whenever the dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedItems([])
+      setMessage("")
+      setIsSuccess(false)
+      setError(null)
+    }
+  }, [open])
+
   const handleItemToggle = (inventoryId: string, checked: boolean) => {
     if (checked) {
-      setSelectedItems([...selectedItems, { inventoryId, quantity: 1 }])
+      setSelectedItems([...selectedItems, { inventoryId, quantity: null }])
     } else {
       setSelectedItems(selectedItems.filter((item) => item.inventoryId !== inventoryId))
     }
   }
 
-  const handleQuantityChange = (inventoryId: string, quantity: number, maxAvailable: number) => {
+  const handleQuantityChange = (inventoryId: string, quantity: number | null, maxAvailable: number) => {
     setSelectedItems(
       selectedItems.map((item) =>
         item.inventoryId === inventoryId 
-          ? { ...item, quantity: Math.max(1, Math.min(quantity, maxAvailable)) } 
+          ? { ...item, quantity: quantity === null ? null : Math.min(quantity, maxAvailable) } 
           : item
       )
     )
@@ -83,7 +93,7 @@ export function ContactSupplierDialog({
   const calculateTotal = () => {
     return selectedItems.reduce((total, selected) => {
       const inventory = location.inventory.find((inv) => inv.id === selected.inventoryId)
-      if (!inventory) return total
+      if (!inventory || !selected.quantity) return total
 
       const pricingOption =
         inventory.pricing_options && inventory.pricing_options.length > 0
@@ -96,7 +106,14 @@ export function ContactSupplierDialog({
 
   const handleSubmit = async () => {
     if (selectedItems.length === 0) {
-      setError("Please select at least one item to request")
+      setError("Please select at least one item")
+      return
+    }
+
+    // Validate all selected items have valid quantities
+    const invalidItems = selectedItems.filter(item => !item.quantity || item.quantity < 1)
+    if (invalidItems.length > 0) {
+      setError("Please enter a valid quantity for all selected items")
       return
     }
 
@@ -270,16 +287,18 @@ export function ContactSupplierDialog({
                                 type="text"
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                value={selectedItem?.quantity || ''}
+                                placeholder="Enter qty"
+                                value={selectedItem?.quantity === null ? '' : selectedItem?.quantity}
                                 onChange={(e) => {
                                   const value = e.target.value
                                   // Allow empty field during typing
                                   if (value === '') {
+                                    handleQuantityChange(item.id, null, item.quantity)
                                     return
                                   }
                                   const numValue = parseInt(value)
                                   if (!isNaN(numValue) && numValue > 0) {
-                                    handleQuantityChange(item.id, Math.min(numValue, item.quantity), item.quantity)
+                                    handleQuantityChange(item.id, numValue, item.quantity)
                                   }
                                 }}
                                 onBlur={(e) => {
