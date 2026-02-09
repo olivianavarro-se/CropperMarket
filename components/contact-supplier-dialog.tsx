@@ -271,9 +271,24 @@ export function ContactSupplierDialog({
                                 min="1"
                                 max={item.quantity}
                                 value={selectedItem?.quantity || 1}
-                                onChange={(e) =>
-                                  handleQuantityChange(item.id, parseInt(e.target.value) || 1, item.quantity)
-                                }
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                  // Allow empty field during typing
+                                  if (value === '') {
+                                    handleQuantityChange(item.id, 1, item.quantity)
+                                    return
+                                  }
+                                  const numValue = parseInt(value)
+                                  if (!isNaN(numValue)) {
+                                    handleQuantityChange(item.id, numValue, item.quantity)
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // If field is empty on blur, set to 1
+                                  if (e.target.value === '') {
+                                    handleQuantityChange(item.id, 1, item.quantity)
+                                  }
+                                }}
                                 className="w-20 h-8 text-sm"
                               />
                               <span className="text-xs text-gray-500">
