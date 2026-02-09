@@ -267,25 +267,24 @@ export function ContactSupplierDialog({
                               </Label>
                               <Input
                                 id={`qty-${item.id}`}
-                                type="number"
-                                min="1"
-                                max={item.quantity}
-                                value={selectedItem?.quantity || 1}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                value={selectedItem?.quantity || ''}
                                 onChange={(e) => {
                                   const value = e.target.value
                                   // Allow empty field during typing
                                   if (value === '') {
-                                    handleQuantityChange(item.id, 1, item.quantity)
                                     return
                                   }
                                   const numValue = parseInt(value)
-                                  if (!isNaN(numValue)) {
-                                    handleQuantityChange(item.id, numValue, item.quantity)
+                                  if (!isNaN(numValue) && numValue > 0) {
+                                    handleQuantityChange(item.id, Math.min(numValue, item.quantity), item.quantity)
                                   }
                                 }}
                                 onBlur={(e) => {
                                   // If field is empty on blur, set to 1
-                                  if (e.target.value === '') {
+                                  if (e.target.value === '' || parseInt(e.target.value) < 1) {
                                     handleQuantityChange(item.id, 1, item.quantity)
                                   }
                                 }}
