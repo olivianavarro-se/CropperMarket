@@ -76,6 +76,10 @@ export function ContactSupplierDialog({
     return selectedItems.some((item) => item.inventoryId === inventoryId)
   }
 
+  const getSelectedItem = (inventoryId: string) => {
+    return selectedItems.find((item) => item.inventoryId === inventoryId)
+  }
+
   const calculateTotal = () => {
     return selectedItems.reduce((total, selected) => {
       const inventory = location.inventory.find((inv) => inv.id === selected.inventoryId)
