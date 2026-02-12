@@ -18,6 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { formatDistanceToNow } from "date-fns"
+import { getUnitLabel } from "@/lib/unit-labels"
+import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
 
 interface RequestedItem {
   inventory_id: string
@@ -41,6 +43,7 @@ interface OrderRequest {
     business_name: string
     phone: string | null
     email: string | null
+    pickup_hours?: { days: string[]; timeSlots: { start: string; end: string }[] }[]
   }
   location: {
     name: string
@@ -326,6 +329,17 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                         </a>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Pickup Hours (show only if accepted) */}
+                {order.status === "accepted" && order.supplier?.pickup_hours && order.supplier.pickup_hours.length > 0 && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="font-medium mb-3 flex items-center gap-2 text-green-900">
+                      <Clock className="h-4 w-4" />
+                      Pickup Availability
+                    </h4>
+                    <PickupHoursDisplay schedules={order.supplier.pickup_hours} />
                   </div>
                 )}
 

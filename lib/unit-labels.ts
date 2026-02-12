@@ -18,3 +18,7 @@ export function getStockUnitLabel(unit: string): string {
 export function getSellingUnitLabel(unit: string): string {
   return SELLING_UNIT_LABELS[unit] || `per ${unit}`
 }
+
+export function getUnitLabel(unit: string): string {
+  return STOCK_UNIT_LABELS[unit] || unit
+}
