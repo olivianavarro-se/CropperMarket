@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2, Package, User, Mail, Phone, MapPin, MessageSquare, Clock, Check, X, RefreshCw, Trash2, ShoppingCart, Store } from "lucide-react"
+import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -164,6 +165,9 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
       }))
 
+      console.log("[v0] My Requests with suppliers:", requestsWithSuppliers)
+      console.log("[v0] First request supplier pickup_hours:", requestsWithSuppliers[0]?.supplier?.pickup_hours)
+      
       setIncomingOrders(incomingWithRequesters)
       setMyRequests(requestsWithSuppliers as any)
     } catch (err) {
@@ -433,13 +437,28 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                   </div>
                 )}
 
-                {/* Status indicator for my requests */}
+                {/* Pickup Hours for my requests */}
                 {!isIncoming && order.status === "accepted" && (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800 font-medium">
-                      Your request has been accepted! Contact the supplier to arrange pickup.
-                    </p>
-                  </div>
+                  <>
+                    {order.supplier?.pickup_hours && order.supplier.pickup_hours.length > 0 ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-medium mb-3 flex items-center gap-2 text-green-900">
+                          <Clock className="h-4 w-4" />
+                          Pickup Availability
+                        </h4>
+                        <PickupHoursDisplay schedules={order.supplier.pickup_hours} />
+                        <p className="mt-3 text-sm text-green-800 font-medium">
+                          Call to make an appointment for pickup.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-800 font-medium">
+                          Your request has been accepted! Contact the supplier to arrange pickup.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
