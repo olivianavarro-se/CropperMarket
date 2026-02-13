@@ -17,7 +17,7 @@ export default async function Home() {
     userType = profile?.account_type || null
     
     // Check if user owns a supplier/farm
-    const { data: supplier } = await supabase.from("suppliers").select("id").eq("user_id", user.id).single()
+    const { data: supplier } = await supabase.from("suppliers").select("id").eq("user_id", user.id).maybeSingle()
     userSupplierId = supplier?.id || null
   }
 
