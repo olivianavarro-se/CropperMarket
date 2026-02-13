@@ -145,11 +145,11 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
       const supplierIds = [...new Set((requestsData || []).map((o) => o.supplier_id))]
       const { data: suppliersData } = await supabase
         .from("suppliers")
-        .select("id, business_name, phone, email")
+        .select("id, business_name, phone, email, pickup_hours")
         .in("id", supplierIds)
 
       const suppliersMap = new Map(
-        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email }])
+        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
       )
 
       // Combine incoming orders with requester info
@@ -161,7 +161,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
       // Combine my requests with supplier info
       const requestsWithSuppliers = (requestsData || []).map((order) => ({
         ...order,
-        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null },
+        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
       }))
 
       setIncomingOrders(incomingWithRequesters)
