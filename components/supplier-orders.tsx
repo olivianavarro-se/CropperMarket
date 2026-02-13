@@ -190,8 +190,13 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         return
       }
 
-      // Update local state
-      setOrders((prev) =>
+      // Update local state for both incoming orders and my requests
+      setIncomingOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      )
+      setMyRequests((prev) =>
         prev.map((order) =>
           order.id === orderId ? { ...order, status: newStatus } : order
         )
@@ -214,8 +219,9 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         return
       }
 
-      // Remove from local state
-      setOrders((prev) => prev.filter((order) => order.id !== orderId))
+      // Remove from local state for both incoming orders and my requests
+      setIncomingOrders((prev) => prev.filter((order) => order.id !== orderId))
+      setMyRequests((prev) => prev.filter((order) => order.id !== orderId))
     } finally {
       setDeleting(null)
     }
