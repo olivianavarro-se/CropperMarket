@@ -8,6 +8,7 @@ interface MapViewProps {
   locations: LocationWithSupplier[]
   isAuthenticated?: boolean
   userId?: string | null
+  userSupplierId?: string | null
   userLocation?: { lat: number; lng: number } | null
   selectedLocation?: LocationWithSupplier | null
   onLocationSelect?: (location: LocationWithSupplier | null) => void
@@ -20,6 +21,7 @@ export function MapView({
   locations,
   isAuthenticated = false,
   userId,
+  userSupplierId,
   userLocation,
   selectedLocation,
   onLocationSelect,
@@ -387,13 +389,14 @@ export function MapView({
 
       {selectedLocation && (
         <div className="absolute top-4 right-4 w-[420px] max-h-[calc(100vh-120px)] overflow-y-auto z-10">
-          <LocationCard
-            location={selectedLocation}
-            onClose={() => onLocationSelect?.(null)}
-            isAuthenticated={isAuthenticated}
-            userId={userId}
-            activeFilters={activeFilters}
-          />
+        <LocationCard
+          location={selectedLocation}
+          onClose={() => onLocationSelect?.(null)}
+          isAuthenticated={isAuthenticated}
+          userId={userId}
+          userSupplierId={userSupplierId}
+          activeFilters={activeFilters}
+        />
         </div>
       )}
     </div>

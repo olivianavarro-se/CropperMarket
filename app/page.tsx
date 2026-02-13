@@ -11,9 +11,14 @@ export default async function Home() {
   const isAuthenticated = !!user
 
   let userType: string | null = null
+  let userSupplierId: string | null = null
   if (user) {
     const { data: profile } = await supabase.from("profiles").select("account_type").eq("id", user.id).single()
     userType = profile?.account_type || null
+    
+    // Check if user owns a supplier/farm
+    const { data: supplier } = await supabase.from("suppliers").select("id").eq("user_id", user.id).single()
+    userSupplierId = supplier?.id || null
   }
 
   const query = supabase
@@ -48,7 +53,12 @@ export default async function Home() {
     <div className="flex flex-col h-screen">
       <Header />
       <main className="flex-1 relative">
-        <HomeMapView locations={locationsWithInventory || []} isAuthenticated={isAuthenticated} userId={user?.id} />
+        <HomeMapView 
+          locations={locationsWithInventory || []} 
+          isAuthenticated={isAuthenticated} 
+          userId={user?.id}
+          userSupplierId={userSupplierId}
+        />
       </main>
     </div>
   )
