@@ -118,7 +118,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
       // Fetch suppliers separately
       const { data: suppliersData, error: suppliersError } = await supabase
         .from("suppliers")
-        .select("id, business_name, phone, email")
+        .select("id, business_name, phone, email, pickup_hours")
         .in("id", supplierIds)
 
       if (suppliersError) {
@@ -127,13 +127,13 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
 
       // Create suppliers map
       const suppliersMap = new Map(
-        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email }])
+        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
       )
 
       // Combine orders with supplier info
       const ordersWithSuppliers = ordersData.map((order) => ({
         ...order,
-        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null },
+        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
       }))
 
       setOrders(ordersWithSuppliers)
@@ -340,6 +340,9 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                       Pickup Availability
                     </h4>
                     <PickupHoursDisplay schedules={order.supplier.pickup_hours} />
+                    <p className="mt-3 text-sm text-green-800 font-medium">
+                      Call to make an appointment for pickup.
+                    </p>
                   </div>
                 )}
 
