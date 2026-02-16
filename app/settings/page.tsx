@@ -26,8 +26,8 @@ export default async function SettingsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <main className="container max-w-4xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+      <main className="container max-w-4xl mx-auto py-4 md:py-8 px-3 md:px-4">
+        <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-8">Account Settings</h1>
         <AccountSettings user={user} profile={profile} supplier={supplier} />
       </main>
     </div>

@@ -202,20 +202,20 @@ export function SearchInterface({
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8">
       {/* Search Bar */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent">
+      <div className="mb-4 md:mb-8">
+        <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent">
           Search Locations
         </h2>
         <div className="flex gap-2">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+            <Search className="absolute left-3 top-2.5 md:top-3 w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
             <Input
-              placeholder="Search suppliers, products, locations..."
+              placeholder="Search suppliers, products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 text-base shadow-sm"
+              className="pl-9 md:pl-10 h-10 md:h-12 text-sm md:text-base shadow-sm"
               autoFocus
             />
           </div>
@@ -223,16 +223,17 @@ export function SearchInterface({
             variant={showFilters ? "default" : "outline"}
             size="lg"
             onClick={() => setShowFilters(!showFilters)}
-            className="shadow-sm"
+            className="shadow-sm h-10 md:h-11 px-3 md:px-4"
           >
-            <Sliders className="w-4 h-4 mr-2" />
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+            <Sliders className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Filters {activeFilterCount > 0 && `(${activeFilterCount})`}</span>
+            {activeFilterCount > 0 && <Badge variant="destructive" className="ml-1 md:hidden h-5 min-w-5 px-1.5 text-[10px]">{activeFilterCount}</Badge>}
           </Button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Filters Sidebar */}
         {showFilters && (
           <div className="space-y-4">
@@ -432,10 +433,10 @@ export function SearchInterface({
                   >
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-gray-900">{supplier.business_name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg md:text-xl font-semibold text-gray-900 truncate">{supplier.business_name}</h3>
                           <p className="text-sm text-gray-600">{location.name}</p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
                             <Badge
                               variant={supplier.supplier_type === "broker" ? "outline" : "outline"}
                               className={
@@ -446,9 +447,9 @@ export function SearchInterface({
                             >
                               {supplier.supplier_type}
                             </Badge>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {location.address}, {location.city}, {location.state} {location.zip_code}
+                            <p className="text-xs md:text-sm text-muted-foreground flex items-center gap-1">
+                              <MapPin className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{location.address}, {location.city}, {location.state} {location.zip_code}</span>
                             </p>
                           </div>
                         </div>
@@ -465,7 +466,7 @@ export function SearchInterface({
                             <Package className="w-4 h-4 text-green-600" />
                             <h4 className="font-semibold text-sm">Available Products ({location.inventory.length})</h4>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 gap-2">
                             {location.inventory.slice(0, 4).map((item) => (
                               <div
                                 key={item.id}
