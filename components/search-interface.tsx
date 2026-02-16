@@ -216,16 +216,18 @@ export function SearchInterface({
           />
         </div>
       </div>
-          <Button
-            variant={showFilters ? "default" : "outline"}
-            size="lg"
-            onClick={() => setShowFilters(!showFilters)}
-            className="shadow-sm"
-          >
-            <Sliders className="w-4 h-4 mr-2" />
-            Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
-          </Button>
-        </div>
+
+      {/* Filter Toggle */}
+      <div className="mb-4 md:mb-6">
+        <Button
+          variant={showFilters ? "default" : "outline"}
+          size="lg"
+          onClick={() => setShowFilters(!showFilters)}
+          className="shadow-sm"
+        >
+          <Sliders className="w-4 h-4 mr-2" />
+          Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
+        </Button>
       </div>
 
       {/* Main Content */}
