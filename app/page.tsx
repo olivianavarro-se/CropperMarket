@@ -50,9 +50,9 @@ export default async function Home() {
   })
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
       <Header />
-      <main className="flex-1 relative">
+      <main className="flex-1 relative overflow-hidden">
         <HomeMapView 
           locations={locationsWithInventory || []} 
           isAuthenticated={isAuthenticated} 
