@@ -127,31 +127,37 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         ...(requestsData || []).map((o) => o.supplier_id),
       ])
 
-      // Fetch all profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone")
-        .in("id", Array.from(allProfileIds))
+      // Fetch all profiles only if there are IDs to fetch
+      let profilesMap = new Map()
+      if (allProfileIds.size > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", Array.from(allProfileIds))
 
-      if (profilesError) {
-        console.error("[Orders] Error fetching profiles:", profilesError.message)
+        if (profilesError) {
+          console.error("[Orders] Error fetching profiles:", profilesError.message)
+        }
+
+        // Create profiles map
+        profilesMap = new Map(
+          (profilesData || []).map((p) => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }])
+        )
       }
-
-      // Create profiles map
-      const profilesMap = new Map(
-        (profilesData || []).map((p) => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }])
-      )
 
       // Get supplier info for my requests
       const supplierIds = [...new Set((requestsData || []).map((o) => o.supplier_id))]
-      const { data: suppliersData } = await supabase
-        .from("suppliers")
-        .select("id, business_name, phone, email, pickup_hours")
-        .in("id", supplierIds)
+      let suppliersMap = new Map()
+      if (supplierIds.length > 0) {
+        const { data: suppliersData } = await supabase
+          .from("suppliers")
+          .select("id, business_name, phone, email, pickup_hours")
+          .in("id", supplierIds)
 
-      const suppliersMap = new Map(
-        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
-      )
+        suppliersMap = new Map(
+          (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
+        )
+      }
 
       // Combine incoming orders with requester info
       const incomingWithRequesters = (incomingData || []).map((order) => ({
@@ -165,9 +171,6 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
       }))
 
-      console.log("[v0] My Requests with suppliers:", requestsWithSuppliers)
-      console.log("[v0] First request supplier pickup_hours:", requestsWithSuppliers[0]?.supplier?.pickup_hours)
-      
       setIncomingOrders(incomingWithRequesters)
       setMyRequests(requestsWithSuppliers as any)
     } catch (err) {
@@ -179,7 +182,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
 
   useEffect(() => {
     fetchOrders()
-  }, [supplierId])
+  }, [supplierId, userId])
 
   const updateOrderStatus = async (orderId: string, newStatus: "accepted" | "rejected" | "completed") => {
     setUpdating(orderId)
