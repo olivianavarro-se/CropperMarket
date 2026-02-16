@@ -483,10 +483,30 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   )
 
   return (
-    <div className="relative w-full h-full">
-      {/* ===== SINGLE SHARED MAP (always rendered, positioned differently per breakpoint) ===== */}
-      {/* On mobile: fills entire container. On desktop: offset to the right of panels */}
-      <div className="absolute inset-0 md:left-[770px] md:top-[57px] flex flex-col">
+    <div className="relative w-full h-full flex flex-col md:block">
+      {/* ==================== MOBILE SEARCH BAR (< md) -- in document flow, above map ==================== */}
+      <div className="md:hidden flex gap-2 p-3 bg-white border-b border-gray-200 shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search suppliers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 border-gray-200 h-10 text-sm"
+          />
+        </div>
+        <Button
+          variant={mobileShowFilters ? "default" : "outline"}
+          size="icon"
+          className="h-10 w-10 shrink-0"
+          onClick={() => { setMobileShowFilters(!mobileShowFilters); setMobileShowListings(false) }}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* ===== SINGLE SHARED MAP (fills remaining space on mobile, offset on desktop) ===== */}
+      <div className="relative flex-1 md:absolute md:inset-0 md:left-[770px] md:top-[57px] flex flex-col">
         <MapView
           locations={filteredLocations}
           isAuthenticated={isAuthenticated}
@@ -497,28 +517,6 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
           onLocationSelect={setSelectedLocation}
           activeFilters={filters}
         />
-      </div>
-
-      {/* ==================== MOBILE OVERLAYS (< md) ==================== */}
-      {/* Mobile search bar floating at top */}
-      <div className="md:hidden absolute top-3 left-3 right-3 z-10 flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search suppliers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-white/95 backdrop-blur-sm shadow-lg border-gray-200 h-10 text-sm"
-          />
-        </div>
-        <Button
-          variant={mobileShowFilters ? "default" : "outline"}
-          size="icon"
-          className="h-10 w-10 shrink-0 shadow-lg bg-white/95 backdrop-blur-sm"
-          onClick={() => { setMobileShowFilters(!mobileShowFilters); setMobileShowListings(false) }}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Mobile floating listings toggle button */}
