@@ -202,23 +202,20 @@ export function SearchInterface({
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <div className="container mx-auto px-3 md:px-4 py-4 md:py-8">
       {/* Search Bar */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent">
-          Search Locations
-        </h2>
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search suppliers, products, locations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 text-base shadow-sm"
-              autoFocus
-            />
-          </div>
+      <div className="mb-4 md:mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search suppliers or hay types..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 md:pl-10 pr-4 py-4 md:py-6 text-sm md:text-base"
+          />
+        </div>
+      </div>
           <Button
             variant={showFilters ? "default" : "outline"}
             size="lg"

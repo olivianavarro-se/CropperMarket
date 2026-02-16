@@ -128,23 +128,24 @@ export function Header() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="border-b bg-[#FFFDF8]/90 backdrop-blur-md shadow-sm z-10 sticky top-0 border-[#E8D5B5]">
-      <div className={`px-4 pr-4 py-3 flex items-center justify-between ${isHomePage ? "pl-6" : ""}`}>
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+    <header className="border-b bg-[#FFFDF8]/95 backdrop-blur-md shadow-sm z-10 sticky top-0 border-[#E8D5B5]">
+      <div className="px-3 py-2 md:px-4 md:py-3 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-1.5 md:gap-2 hover:opacity-80 transition-opacity">
           <Image
             src="/images/hay-20cropper-20logo.png"
             alt="HayCropper Logo"
-            width={64}
-            height={64}
-            className="object-contain"
+            width={40}
+            height={40}
+            className="object-contain md:w-16 md:h-16"
           />
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-[#65411C] tracking-wide">HAYCROPPER</h1>
-            <span className="text-[10px] text-[#8A6842] tracking-widest -mt-1">MARKETPLACE</span>
+            <h1 className="text-base md:text-xl font-bold text-[#65411C] tracking-wide">HAYCROPPER</h1>
+            <span className="text-[8px] md:text-[10px] text-[#8A6842] tracking-widest -mt-0.5 md:-mt-1">MARKETPLACE</span>
           </div>
         </Link>
 
-        <nav className="flex items-center gap-3">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-3">
           {user ? (
             <>
               {!isLoadingProfile && (
@@ -180,6 +181,19 @@ export function Header() {
                 <Link href="/auth/sign-up">Sign Up</Link>
               </Button>
             </>
+          )}
+        </nav>
+
+        {/* Mobile Menu Button */}
+        <nav className="flex md:hidden items-center gap-2">
+          {user ? (
+            <Button asChild variant={isActive("/settings") ? "default" : "outline"} size="sm">
+              <Link href="/settings">Account</Link>
+            </Button>
+          ) : (
+            <Button asChild size="sm">
+              <Link href="/auth/login">Login</Link>
+            </Button>
           )}
         </nav>
       </div>
