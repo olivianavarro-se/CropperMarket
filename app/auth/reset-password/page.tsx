@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50">
+    <div className="flex h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50 overflow-hidden">
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">

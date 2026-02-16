@@ -1,22 +1,41 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Map, Search, LayoutDashboard, User } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const navItems = [
-  { href: "/", label: "Map", icon: Map },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/settings", label: "Account", icon: User },
-]
+import { createClient } from "@/lib/supabase/client"
 
 export function MobileBottomNav() {
   const pathname = usePathname()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setIsLoggedIn(!!data.user)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
 
   // Don't show on auth pages
   if (pathname.startsWith("/auth")) return null
+
+  // Always-visible tabs, plus auth-only tabs
+  const navItems = [
+    { href: "/", label: "Map", icon: Map },
+    { href: "/search", label: "Search", icon: Search },
+    ...(isLoggedIn
+      ? [
+          { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+          { href: "/settings", label: "Account", icon: User },
+        ]
+      : []),
+  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#E8D5B5] bg-[#FFFDF8]/95 backdrop-blur-md md:hidden">

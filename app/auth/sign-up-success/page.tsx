@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 
 export default function SignUpSuccessPage() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50">
+    <div className="flex h-screen w-full items-center justify-center p-6 md:p-10 bg-gradient-to-br from-amber-50 to-green-50 overflow-hidden">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>

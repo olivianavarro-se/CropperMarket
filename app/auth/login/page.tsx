@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-[#FAF8F5]">
+    <div className="flex h-screen w-full items-center justify-center p-6 md:p-10 bg-[#FAF8F5] overflow-hidden">
       <div className="w-full max-w-md">
         <div className="flex flex-col">
           <div className="flex flex-col items-center gap-4 text-center mb-1">
