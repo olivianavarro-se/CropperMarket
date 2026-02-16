@@ -35,7 +35,7 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
       const { count } = await supabase
         .from("order_requests")
         .select("*", { count: "exact", head: true })
-        .eq("buyer_id", userId)
+        .eq("requester_id", userId)
         .eq("status", "accepted")
       
       setNewOrdersCount(count || 0)
@@ -52,7 +52,7 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
           event: "*",
           schema: "public",
           table: "order_requests",
-          filter: `buyer_id=eq.${userId}`,
+          filter: `requester_id=eq.${userId}`,
         },
         () => {
           fetchNewOrdersCount()

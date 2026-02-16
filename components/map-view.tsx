@@ -8,6 +8,7 @@ interface MapViewProps {
   locations: LocationWithSupplier[]
   isAuthenticated?: boolean
   userId?: string | null
+  userSupplierId?: string | null
   userLocation?: { lat: number; lng: number } | null
   selectedLocation?: LocationWithSupplier | null
   onLocationSelect?: (location: LocationWithSupplier | null) => void
@@ -20,6 +21,7 @@ export function MapView({
   locations,
   isAuthenticated = false,
   userId,
+  userSupplierId,
   userLocation,
   selectedLocation,
   onLocationSelect,
@@ -215,9 +217,12 @@ export function MapView({
     }
 
     if (!window.google?.maps) {
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]')
-      if (existingScript) {
-        // Script exists, wait for it to load
+      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]') as HTMLScriptElement | null
+      const expectedSrc = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=marker&loading=async`
+      const hasCorrectKey = existingScript?.src.includes(`key=${mapsApiKey}`)
+
+      if (existingScript && hasCorrectKey) {
+        // Script exists with correct key, wait for it to load
         if ((window as any).google?.maps) {
           initMap()
         } else {
@@ -229,8 +234,14 @@ export function MapView({
           }
         }
       } else {
+        // Remove old script if it has wrong/missing key
+        if (existingScript) {
+          existingScript.remove()
+          delete (window as any).google
+        }
+
         const script = document.createElement("script")
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${mapsApiKey}&libraries=marker&loading=async`
+        script.src = expectedSrc
         script.async = true
         script.defer = true
         script.onload = () => {
@@ -378,13 +389,14 @@ export function MapView({
 
       {selectedLocation && (
         <div className="absolute top-4 right-4 w-[420px] max-h-[calc(100vh-120px)] overflow-y-auto z-10">
-          <LocationCard
-            location={selectedLocation}
-            onClose={() => onLocationSelect?.(null)}
-            isAuthenticated={isAuthenticated}
-            userId={userId}
-            activeFilters={activeFilters}
-          />
+        <LocationCard
+          location={selectedLocation}
+          onClose={() => onLocationSelect?.(null)}
+          isAuthenticated={isAuthenticated}
+          userId={userId}
+          userSupplierId={userSupplierId}
+          activeFilters={activeFilters}
+        />
         </div>
       )}
     </div>

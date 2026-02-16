@@ -18,6 +18,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { formatDistanceToNow } from "date-fns"
+import { getUnitLabel } from "@/lib/unit-labels"
+import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
 
 interface RequestedItem {
   inventory_id: string
@@ -41,6 +43,7 @@ interface OrderRequest {
     business_name: string
     phone: string | null
     email: string | null
+    pickup_hours?: { days: string[]; timeSlots: { start: string; end: string }[] }[]
   }
   location: {
     name: string
@@ -115,7 +118,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
       // Fetch suppliers separately
       const { data: suppliersData, error: suppliersError } = await supabase
         .from("suppliers")
-        .select("id, business_name, phone, email")
+        .select("id, business_name, phone, email, pickup_hours")
         .in("id", supplierIds)
 
       if (suppliersError) {
@@ -124,13 +127,13 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
 
       // Create suppliers map
       const suppliersMap = new Map(
-        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email }])
+        (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
       )
 
       // Combine orders with supplier info
       const ordersWithSuppliers = ordersData.map((order) => ({
         ...order,
-        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null },
+        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
       }))
 
       setOrders(ordersWithSuppliers)
@@ -327,6 +330,30 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                       )}
                     </div>
                   </div>
+                )}
+
+                {/* Pickup Hours (show only if accepted) */}
+                {order.status === "accepted" && (
+                  <>
+                    {order.supplier?.pickup_hours && order.supplier.pickup_hours.length > 0 ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-medium mb-3 flex items-center gap-2 text-green-900">
+                          <Clock className="h-4 w-4" />
+                          Pickup Availability
+                        </h4>
+                        <PickupHoursDisplay schedules={order.supplier.pickup_hours} />
+                        <p className="mt-3 text-sm text-green-800 font-medium">
+                          Call to make an appointment for pickup.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-800 font-medium">
+                          Your request has been accepted! Contact the supplier to arrange pickup.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Requested Items */}

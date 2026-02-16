@@ -30,9 +30,10 @@ interface HomeMapViewProps {
   locations: LocationWithSupplier[]
   isAuthenticated?: boolean
   userId?: string | null
+  userSupplierId?: string | null
 }
 
-export function HomeMapView({ locations, isAuthenticated = false, userId }: HomeMapViewProps) {
+export function HomeMapView({ locations, isAuthenticated = false, userId, userSupplierId }: HomeMapViewProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const { location: userLocation, loading: locationLoading } = useUserLocation()
   const [selectedLocation, setSelectedLocation] = useState<LocationWithSupplier | null>(null)
@@ -516,8 +517,13 @@ export function HomeMapView({ locations, isAuthenticated = false, userId }: Home
         <div className="flex-1">
           <MapView
             locations={filteredLocations}
+            selectedLocation={selectedLocation}
+            setSelectedLocation={setSelectedLocation}
+            userLocation={userLocation}
             isAuthenticated={isAuthenticated}
+            activeFilters={filters}
             userId={userId}
+            userSupplierId={userSupplierId}
             userLocation={userLocation}
             selectedLocation={selectedLocation}
             onLocationSelect={setSelectedLocation}

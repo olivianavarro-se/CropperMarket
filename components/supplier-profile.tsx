@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Phone, Edit2, Save, X, Mail, Truck, Upload, ImageIcon } from "lucide-react"
 import type { Supplier } from "@/lib/types"
+import { PickupHoursEditor, PickupHoursDisplay } from "@/components/pickup-hours-editor"
 
 interface SupplierProfileProps {
   supplier: Supplier
@@ -29,6 +30,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
   const [visibleToBuyers, setVisibleToBuyers] = useState(supplier.visible_to_buyers)
   const [visibleToBrokers, setVisibleToBrokers] = useState(supplier.visible_to_brokers)
   const [paymentMethods, setPaymentMethods] = useState<string[]>(supplier.payment_methods || [])
+  const [pickupHours, setPickupHours] = useState(supplier.pickup_hours || [])
   const [logoUrl, setLogoUrl] = useState(supplier.logo_url || "")
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -79,6 +81,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
           visible_to_buyers: visibleToBuyers,
           visible_to_brokers: visibleToBrokers,
           payment_methods: paymentMethods,
+          pickup_hours: pickupHours,
           logo_url: logoUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -107,6 +110,7 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
     setVisibleToBuyers(supplier.visible_to_buyers)
     setVisibleToBrokers(supplier.visible_to_brokers)
     setPaymentMethods(supplier.payment_methods || [])
+    setPickupHours(supplier.pickup_hours || [])
     setLogoUrl(supplier.logo_url || "")
     setLogoFile(null)
     setIsEditing(false)
@@ -319,6 +323,10 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <PickupHoursEditor schedules={pickupHours} onChange={setPickupHours} />
+              </div>
             </div>
 
             {error && (
@@ -387,6 +395,13 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                       )
                     })}
                   </div>
+                </div>
+              )}
+
+              {supplier.pickup_hours && supplier.pickup_hours.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Pickup Hours</h4>
+                  <PickupHoursDisplay schedules={supplier.pickup_hours} />
                 </div>
               )}
             </div>

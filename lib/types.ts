@@ -19,6 +19,16 @@ export interface Profile {
 
 export type PaymentMethod = "cash" | "credit" | "debit" | "zelle" | "venmo" | "check" | "apple_pay"
 
+export interface PickupTimeSlot {
+  start: string // "09:00"
+  end: string // "17:00"
+}
+
+export interface PickupSchedule {
+  days: string[] // ["monday", "tuesday", "wednesday"]
+  timeSlots: PickupTimeSlot[]
+}
+
 export interface Supplier {
   id: string
   user_id: string
@@ -31,6 +41,7 @@ export interface Supplier {
   visible_to_brokers: boolean
   delivery_available: boolean
   payment_methods: PaymentMethod[]
+  pickup_hours: PickupSchedule[]
   logo_url: string | null
   created_at: string
   updated_at: string

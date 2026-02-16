@@ -18,9 +18,10 @@ interface LocationCardProps {
   isAuthenticated?: boolean
   activeFilters?: any // Added activeFilters to filter displayed inventory
   userId?: string | null
+  userSupplierId?: string | null
 }
 
-export function LocationCard({ location, onClose, isAuthenticated = false, activeFilters, userId }: LocationCardProps) {
+export function LocationCard({ location, onClose, isAuthenticated = false, activeFilters, userId, userSupplierId }: LocationCardProps) {
   const router = useRouter()
   const supplier = location.supplier
   const [showContactDialog, setShowContactDialog] = useState(false)
@@ -74,6 +75,8 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
       setShowContactDialog(true)
     }
   }
+
+  const isOwnFarm = userSupplierId && userSupplierId === supplier.id
 
   return (
     <Card className="shadow-2xl border-0 overflow-hidden">
@@ -216,19 +219,22 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
           )}
         </div>
 
-        <Button
-          className="w-full shadow-md hover:shadow-lg transition-all"
-          onClick={handleContactClick}
-        >
-          {!isAuthenticated ? (
-            <>
-              <Lock className="w-4 h-4 mr-2" />
-              Sign In to Contact Supplier
-            </>
-          ) : (
-            "Contact Supplier"
-          )}
-        </Button>
+        {!isOwnFarm && (
+          <Button
+            size="lg"
+            className="w-full shadow-md hover:shadow-lg transition-all"
+            onClick={handleContactClick}
+          >
+            {!isAuthenticated ? (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                Sign In to Contact Supplier
+              </>
+            ) : (
+              "Contact Supplier"
+            )}
+          </Button>
+        )}
       </CardContent>
 
       {isAuthenticated && userId && (

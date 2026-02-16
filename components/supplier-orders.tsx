@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Package, User, Mail, Phone, MapPin, MessageSquare, Clock, Check, X, RefreshCw, Trash2 } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Loader2, Package, User, Mail, Phone, MapPin, MessageSquare, Clock, Check, X, RefreshCw, Trash2, ShoppingCart, Store } from "lucide-react"
+import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +53,7 @@ interface OrderRequest {
 
 interface SupplierOrdersProps {
   supplierId: string
+  userId: string
 }
 
 const statusColors = {
@@ -67,20 +70,23 @@ const statusLabels = {
   completed: "Completed",
 }
 
-export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
-  const [orders, setOrders] = useState<OrderRequest[]>([])
+export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
+  const [incomingOrders, setIncomingOrders] = useState<OrderRequest[]>([])
+  const [myRequests, setMyRequests] = useState<OrderRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
-  const [filter, setFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "completed">("all")
+  const [incomingFilter, setIncomingFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "completed">("all")
+  const [requestsFilter, setRequestsFilter] = useState<"all" | "pending" | "accepted" | "rejected" | "completed">("all")
+  const [activeTab, setActiveTab] = useState("incoming")
 
   const supabase = createClient()
 
   const fetchOrders = async () => {
     setLoading(true)
     try {
-      // Fetch orders first
-      const { data: ordersData, error: ordersError } = await supabase
+      // Fetch INCOMING orders (where I'm the supplier)
+      const { data: incomingData, error: incomingError } = await supabase
         .from("order_requests")
         .select(`
           *,
@@ -93,41 +99,80 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
         .eq("supplier_id", supplierId)
         .order("created_at", { ascending: false })
 
-      if (ordersError) {
-        console.error("[Orders] Error fetching orders:", ordersError.message)
-        return
+      // Fetch MY REQUESTS (where I'm the requester)
+      const { data: requestsData, error: requestsError } = await supabase
+        .from("order_requests")
+        .select(`
+          *,
+          location:locations (
+            name,
+            city,
+            state
+          )
+        `)
+        .eq("requester_id", userId)
+        .order("created_at", { ascending: false })
+
+      if (incomingError) {
+        console.error("[Orders] Error fetching incoming orders:", incomingError.message)
       }
 
-      if (!ordersData || ordersData.length === 0) {
-        setOrders([])
-        return
+      if (requestsError) {
+        console.error("[Orders] Error fetching my requests:", requestsError.message)
       }
 
-      // Get unique requester IDs
-      const requesterIds = [...new Set(ordersData.map((o) => o.requester_id))]
+      // Get unique profile IDs from both
+      const allProfileIds = new Set([
+        ...(incomingData || []).map((o) => o.requester_id),
+        ...(requestsData || []).map((o) => o.supplier_id),
+      ])
 
-      // Fetch requester profiles separately
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name, email, phone")
-        .in("id", requesterIds)
+      // Fetch all profiles only if there are IDs to fetch
+      let profilesMap = new Map()
+      if (allProfileIds.size > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", Array.from(allProfileIds))
 
-      if (profilesError) {
-        console.error("[Orders] Error fetching profiles:", profilesError.message)
+        if (profilesError) {
+          console.error("[Orders] Error fetching profiles:", profilesError.message)
+        }
+
+        // Create profiles map
+        profilesMap = new Map(
+          (profilesData || []).map((p) => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }])
+        )
       }
 
-      // Create profiles map
-      const profilesMap = new Map(
-        (profilesData || []).map((p) => [p.id, { full_name: p.full_name, email: p.email, phone: p.phone }])
-      )
+      // Get supplier info for my requests
+      const supplierIds = [...new Set((requestsData || []).map((o) => o.supplier_id))]
+      let suppliersMap = new Map()
+      if (supplierIds.length > 0) {
+        const { data: suppliersData } = await supabase
+          .from("suppliers")
+          .select("id, business_name, phone, email, pickup_hours")
+          .in("id", supplierIds)
 
-      // Combine orders with requester info
-      const ordersWithRequesters = ordersData.map((order) => ({
+        suppliersMap = new Map(
+          (suppliersData || []).map((s) => [s.id, { business_name: s.business_name, phone: s.phone, email: s.email, pickup_hours: s.pickup_hours }])
+        )
+      }
+
+      // Combine incoming orders with requester info
+      const incomingWithRequesters = (incomingData || []).map((order) => ({
         ...order,
         requester: profilesMap.get(order.requester_id) || { full_name: null, email: "Unknown", phone: null },
       }))
 
-      setOrders(ordersWithRequesters)
+      // Combine my requests with supplier info
+      const requestsWithSuppliers = (requestsData || []).map((order) => ({
+        ...order,
+        supplier: suppliersMap.get(order.supplier_id) || { business_name: "Unknown", phone: null, email: null, pickup_hours: [] },
+      }))
+
+      setIncomingOrders(incomingWithRequesters)
+      setMyRequests(requestsWithSuppliers as any)
     } catch (err) {
       console.error("[Orders] Unexpected error:", err)
     } finally {
@@ -137,7 +182,7 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
 
   useEffect(() => {
     fetchOrders()
-  }, [supplierId])
+  }, [supplierId, userId])
 
   const updateOrderStatus = async (orderId: string, newStatus: "accepted" | "rejected" | "completed") => {
     setUpdating(orderId)
@@ -152,8 +197,13 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
         return
       }
 
-      // Update local state
-      setOrders((prev) =>
+      // Update local state for both incoming orders and my requests
+      setIncomingOrders((prev) =>
+        prev.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      )
+      setMyRequests((prev) =>
         prev.map((order) =>
           order.id === orderId ? { ...order, status: newStatus } : order
         )
@@ -176,14 +226,19 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
         return
       }
 
-      // Remove from local state
-      setOrders((prev) => prev.filter((order) => order.id !== orderId))
+      // Remove from local state for both incoming orders and my requests
+      setIncomingOrders((prev) => prev.filter((order) => order.id !== orderId))
+      setMyRequests((prev) => prev.filter((order) => order.id !== orderId))
     } finally {
       setDeleting(null)
     }
   }
 
-  const filteredOrders = filter === "all" ? orders : orders.filter((order) => order.status === filter)
+  const filteredIncomingOrders = incomingFilter === "all" ? incomingOrders : incomingOrders.filter((order) => order.status === incomingFilter)
+  const filteredMyRequests = requestsFilter === "all" ? myRequests : myRequests.filter((order) => order.status === requestsFilter)
+
+  const incomingPendingCount = incomingOrders.filter((o) => o.status === "pending").length
+  const myRequestsAcceptedCount = myRequests.filter((o) => o.status === "accepted").length
 
   const getUnitLabel = (unit: string) => {
     switch (unit) {
@@ -206,56 +261,7 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
     )
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold mb-1">Incoming Orders</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage inventory requests from buyers
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchOrders} className="bg-transparent">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-2 flex-wrap">
-        {(["all", "pending", "accepted", "rejected", "completed"] as const).map((status) => (
-          <Button
-            key={status}
-            variant={filter === status ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(status)}
-            className={filter !== status ? "bg-transparent" : ""}
-          >
-            {status === "all" ? "All" : statusLabels[status]}
-            {status !== "all" && (
-              <span className="ml-2 text-xs">
-                ({orders.filter((o) => o.status === status).length})
-              </span>
-            )}
-          </Button>
-        ))}
-      </div>
-
-      {filteredOrders.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No Orders Yet</h3>
-            <p className="text-muted-foreground">
-              {filter === "all"
-                ? "When buyers request your inventory, their orders will appear here."
-                : `No ${filter} orders found.`}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredOrders.map((order) => (
+  const renderOrderCard = (order: any, isIncoming: boolean) => (
             <Card key={order.id} className="overflow-hidden">
               <CardHeader className="pb-3 bg-muted/30">
                 <div className="flex items-start justify-between">
@@ -315,28 +321,28 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
                 </div>
               </CardHeader>
               <CardContent className="pt-4 space-y-4">
-                {/* Customer Info */}
+                {/* Customer/Supplier Info */}
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Customer Information
+                    {isIncoming ? "Customer Information" : "Supplier Information"}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{order.requester?.full_name || "No name provided"}</span>
+                      <span>{isIncoming ? (order.requester?.full_name || "No name provided") : (order.supplier?.business_name || "Unknown")}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${order.requester?.email}`} className="text-primary hover:underline">
-                        {order.requester?.email}
+                      <a href={`mailto:${isIncoming ? order.requester?.email : order.supplier?.email}`} className="text-primary hover:underline">
+                        {isIncoming ? order.requester?.email : order.supplier?.email}
                       </a>
                     </div>
-                    {order.requester?.phone && (
+                    {((isIncoming && order.requester?.phone) || (!isIncoming && order.supplier?.phone)) && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
-                        <a href={`tel:${order.requester.phone}`} className="text-primary hover:underline">
-                          {order.requester.phone}
+                        <a href={`tel:${isIncoming ? order.requester.phone : order.supplier.phone}`} className="text-primary hover:underline">
+                          {isIncoming ? order.requester.phone : order.supplier.phone}
                         </a>
                       </div>
                     )}
@@ -385,8 +391,8 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
                   </div>
                 )}
 
-                {/* Actions */}
-                {order.status === "pending" && (
+                {/* Actions - Only for incoming orders */}
+                {isIncoming && order.status === "pending" && (
                   <div className="flex gap-2 pt-2 border-t">
                     <Button
                       onClick={() => updateOrderStatus(order.id, "accepted")}
@@ -416,7 +422,7 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
                   </div>
                 )}
 
-                {order.status === "accepted" && (
+                {isIncoming && order.status === "accepted" && (
                   <div className="pt-2 border-t">
                     <Button
                       onClick={() => updateOrderStatus(order.id, "completed")}
@@ -433,11 +439,151 @@ export function SupplierOrders({ supplierId }: SupplierOrdersProps) {
                     </Button>
                   </div>
                 )}
+
+                {/* Pickup Hours for my requests */}
+                {!isIncoming && order.status === "accepted" && (
+                  <>
+                    {order.supplier?.pickup_hours && order.supplier.pickup_hours.length > 0 ? (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <h4 className="font-medium mb-3 flex items-center gap-2 text-green-900">
+                          <Clock className="h-4 w-4" />
+                          Pickup Availability
+                        </h4>
+                        <PickupHoursDisplay schedules={order.supplier.pickup_hours} />
+                        <p className="mt-3 text-sm text-green-800 font-medium">
+                          Call to make an appointment for pickup.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm text-green-800 font-medium">
+                          Your request has been accepted! Contact the supplier to arrange pickup.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
               </CardContent>
             </Card>
-          ))}
+  )
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold mb-1">Orders</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage incoming orders and track your requests
+          </p>
         </div>
-      )}
+        <Button variant="outline" size="sm" onClick={fetchOrders} className="bg-transparent">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="incoming" className="relative">
+            <Store className="h-4 w-4 mr-2" />
+            Incoming Orders
+            {incomingPendingCount > 0 && (
+              <Badge className="ml-2 bg-red-500 text-white px-1.5 py-0 text-xs h-5 min-w-5">
+                {incomingPendingCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="relative">
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            My Requests
+            {myRequestsAcceptedCount > 0 && (
+              <Badge className="ml-2 bg-green-500 text-white px-1.5 py-0 text-xs h-5 min-w-5">
+                {myRequestsAcceptedCount}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="incoming" className="space-y-4">
+          {/* Incoming Orders Filter */}
+          <div className="flex gap-2 flex-wrap">
+            {(["all", "pending", "accepted", "rejected", "completed"] as const).map((status) => (
+              <Button
+                key={status}
+                variant={incomingFilter === status ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIncomingFilter(status)}
+                className={incomingFilter !== status ? "bg-transparent" : ""}
+              >
+                {status === "all" ? "All" : statusLabels[status]}
+                {status !== "all" && (
+                  <span className="ml-2 text-xs">
+                    ({incomingOrders.filter((o) => o.status === status).length})
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+
+          {filteredIncomingOrders.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">No Incoming Orders</h3>
+                <p className="text-muted-foreground">
+                  {incomingFilter === "all"
+                    ? "When buyers request your inventory, their orders will appear here."
+                    : `No ${incomingFilter} orders found.`}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredIncomingOrders.map((order) => renderOrderCard(order, true))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-4">
+          {/* My Requests Filter */}
+          <div className="flex gap-2 flex-wrap">
+            {(["all", "pending", "accepted", "rejected", "completed"] as const).map((status) => (
+              <Button
+                key={status}
+                variant={requestsFilter === status ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRequestsFilter(status)}
+                className={requestsFilter !== status ? "bg-transparent" : ""}
+              >
+                {status === "all" ? "All" : statusLabels[status]}
+                {status !== "all" && (
+                  <span className="ml-2 text-xs">
+                    ({myRequests.filter((o) => o.status === status).length})
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+
+          {filteredMyRequests.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold mb-2">No Requests Yet</h3>
+                <p className="text-muted-foreground">
+                  {requestsFilter === "all"
+                    ? "When you request inventory from suppliers, your requests will appear here."
+                    : `No ${requestsFilter} requests found.`}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredMyRequests.map((order) => renderOrderCard(order, false))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
