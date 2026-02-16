@@ -130,6 +130,25 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* HayCropper brand colors as Tailwind tokens */
+  --color-hay-glow: #fce2a4;
+  --color-hay-gold: #f0b349;
+  --color-hay-dark: #65411c;
+  --color-hay-dark-hover: #4a2e14;
+  --color-hay-medium: #8a6842;
+  --color-hay-warm: #b38d56;
+  --color-hay-bg: #FFFDF8;
+  --color-hay-bg-alt: #FAF8F5;
+  --color-hay-border: #E8D5B5;
+
+  /* Semantic: Grower (earthy green) & Broker (warm gold) */
+  --color-grower: #5a7a3a;
+  --color-grower-bg: #f0f5eb;
+  --color-grower-border: #d4e4c8;
+  --color-broker: #b8860b;
+  --color-broker-bg: #fdf6e8;
+  --color-broker-border: #ecdcb0;
 }
 
 @layer base {

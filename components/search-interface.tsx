@@ -205,7 +205,7 @@ export function SearchInterface({
     <div className="max-w-7xl mx-auto px-3 md:px-4 py-4 md:py-8">
       {/* Search Bar */}
       <div className="mb-4 md:mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-green-700 to-green-900 bg-clip-text text-transparent">
+        <h2 className="text-2xl md:text-3xl font-bold mb-3 md:mb-4 text-hay-dark">
           Search Locations
         </h2>
         <div className="flex gap-2">
@@ -434,15 +434,15 @@ export function SearchInterface({
                     <CardContent className="pt-6">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg md:text-xl font-semibold text-gray-900 truncate">{supplier.business_name}</h3>
-                          <p className="text-sm text-gray-600">{location.name}</p>
+                          <h3 className="text-lg md:text-xl font-semibold text-foreground truncate">{supplier.business_name}</h3>
+                          <p className="text-sm text-muted-foreground">{location.name}</p>
                           <div className="flex flex-wrap items-center gap-2 mt-2">
                             <Badge
-                              variant={supplier.supplier_type === "broker" ? "outline" : "outline"}
+                              variant="outline"
                               className={
                                 supplier.supplier_type === "broker" 
-                                  ? "bg-yellow-50 border-yellow-200 text-yellow-800 capitalize shadow-sm" 
-                                  : "bg-green-50 border-green-200 text-green-800 capitalize shadow-sm"
+                                  ? "bg-broker-bg border-broker-border text-broker capitalize shadow-sm" 
+                                  : "bg-grower-bg border-grower-border text-grower capitalize shadow-sm"
                               }
                             >
                               {supplier.supplier_type}
@@ -463,21 +463,21 @@ export function SearchInterface({
                       {location.inventory && location.inventory.length > 0 && (
                         <div className="mb-4 pb-4 border-b">
                           <div className="flex items-center gap-2 mb-2">
-                            <Package className="w-4 h-4 text-green-600" />
+                            <Package className="w-4 h-4 text-hay-gold" />
                             <h4 className="font-semibold text-sm">Available Products ({location.inventory.length})</h4>
                           </div>
                           <div className="grid grid-cols-1 gap-2">
                             {location.inventory.slice(0, 4).map((item) => (
                               <div
                                 key={item.id}
-                                className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
+                                className="flex justify-between items-center text-sm bg-muted p-2 rounded"
                               >
                                 <div>
                                   <span className="font-medium">{item.product_name}</span>
                                   {item.description && (
-                                    <span className="text-xs text-gray-500 block italic">{item.description}</span>
+                                    <span className="text-xs text-muted-foreground block italic">{item.description}</span>
                                   )}
-                                  <span className="text-xs text-gray-500 ml-1">
+                                    <span className="text-xs text-muted-foreground ml-1">
                                     ({item.quantity} {getStockUnitLabel(item.stock_unit || "tons")})
                                   </span>
                                 </div>
@@ -487,8 +487,8 @@ export function SearchInterface({
                                       <div className="space-y-0.5">
                                         {item.pricing_options.map((option, idx) => (
                                           <div key={idx}>
-                                            <span className="text-green-700 font-semibold">${option.price}</span>
-                                            <span className="text-xs text-gray-500 ml-1">
+                                            <span className="text-hay-dark font-semibold">${option.price}</span>
+                                            <span className="text-xs text-muted-foreground ml-1">
                                               {getSellingUnitLabel(option.unit)}
                                             </span>
                                           </div>
@@ -496,8 +496,8 @@ export function SearchInterface({
                                       </div>
                                     ) : (
                                       <>
-                                        <span className="text-green-700 font-semibold">${item.price_per_unit}</span>
-                                        <span className="text-xs text-gray-500 ml-1">
+                                        <span className="text-hay-dark font-semibold">${item.price_per_unit}</span>
+                                        <span className="text-xs text-muted-foreground ml-1">
                                           {getSellingUnitLabel(item.selling_unit || "tons")}
                                         </span>
                                       </>
@@ -527,7 +527,7 @@ export function SearchInterface({
                             {supplier.email && (
                               <button
                                 onClick={(e) => handleEmailClick(e, supplier.email!, supplier.business_name)}
-                                className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
+                                className="flex items-center gap-1 text-sm text-hay-dark hover:text-hay-dark-hover transition-colors"
                               >
                                 <Mail className="w-4 h-4" />
                                 {supplier.email}
@@ -536,7 +536,7 @@ export function SearchInterface({
                             {supplier.phone && (
                               <button
                                 onClick={(e) => handlePhoneClick(e, supplier.phone!)}
-                                className="flex items-center gap-1 text-sm text-green-700 hover:text-green-800 transition-colors"
+                                className="flex items-center gap-1 text-sm text-hay-dark hover:text-hay-dark-hover transition-colors"
                               >
                                 <Phone className="w-4 h-4" />
                                 {supplier.phone}
@@ -544,7 +544,7 @@ export function SearchInterface({
                             )}
                           </>
                         ) : (
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Lock className="w-4 h-4" />
                             <span>Sign in to view contact information</span>
                           </div>
