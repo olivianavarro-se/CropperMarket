@@ -66,9 +66,40 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
   }, [userId])
 
   return (
-    <div className="flex gap-6">
-      {/* Left Sidebar Navigation */}
-      <aside className="w-64 shrink-0">
+    <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+      {/* Mobile horizontal scrollable tabs -- visible below md */}
+      <div className="md:hidden overflow-x-auto -mx-3 px-3 pb-1">
+        <nav className="flex gap-2 min-w-max">
+          {tabs.map((tab) => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span>{tab.label}</span>
+                {tab.id === "orders" && newOrdersCount > 0 && (
+                  <Badge variant="destructive" className="ml-0.5 h-5 min-w-5 px-1.5 text-[10px]">
+                    {newOrdersCount}
+                  </Badge>
+                )}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Desktop sidebar -- hidden below md, identical to original */}
+      <aside className="hidden md:block w-64 shrink-0">
         <nav className="space-y-1 sticky top-6">
           {tabs.map((tab) => {
             const Icon = tab.icon

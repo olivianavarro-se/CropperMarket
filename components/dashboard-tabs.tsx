@@ -79,8 +79,8 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-      {/* Mobile Tab Navigation */}
-      <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4">
+      {/* Mobile horizontal scrollable tabs -- visible below md */}
+      <div className="md:hidden overflow-x-auto -mx-3 px-3 pb-1">
         <nav className="flex gap-2 min-w-max">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -91,7 +91,7 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+                  "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "bg-muted text-muted-foreground"
@@ -100,7 +100,7 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
                 <Icon className="h-4 w-4 shrink-0" />
                 <span>{tab.label}</span>
                 {tab.id === "orders" && pendingOrdersCount > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-5 min-w-5 px-1.5">
+                  <Badge variant="destructive" className="ml-0.5 h-5 min-w-5 px-1.5 text-[10px]">
                     {pendingOrdersCount}
                   </Badge>
                 )}
@@ -110,7 +110,7 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
         </nav>
       </div>
 
-      {/* Desktop Sidebar Navigation */}
+      {/* Desktop sidebar -- hidden below md, identical to original */}
       <aside className="hidden md:block w-64 shrink-0">
         <nav className="space-y-1 sticky top-6">
           {tabs.map((tab) => {

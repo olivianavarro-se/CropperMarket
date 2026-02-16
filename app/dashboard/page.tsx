@@ -55,10 +55,10 @@ export default async function DashboardPage() {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Buyer Dashboard</h1>
-            <p className="text-gray-600">Track your orders and manage your calendar</p>
+        <main className="flex-1 container mx-auto px-3 md:px-4 py-4 md:py-8">
+          <div className="mb-4 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Buyer Dashboard</h1>
+            <p className="text-sm md:text-base text-gray-600">Track your orders and manage your calendar</p>
           </div>
           <BuyerDashboardTabs userId={user.id} />
         </main>
@@ -70,10 +70,10 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Supplier Dashboard</h1>
-          <p className="text-gray-600">Manage your business profile, locations, inventory, calendar, and orders</p>
+      <main className="flex-1 container mx-auto px-3 md:px-4 py-4 md:py-8">
+        <div className="mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">Supplier Dashboard</h1>
+          <p className="text-sm md:text-base text-gray-600">Manage your business profile, locations, inventory, calendar, and orders</p>
         </div>
 
         {!supplier ? (
