@@ -201,8 +201,8 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
     }))
   }
 
-  // Shared filter panel content (used in both mobile and desktop)
-  const filterContent = (
+  // Shared filter panel content (function to return fresh JSX each call)
+  const renderFilterContent = () => (
     <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Supplier Type */}
           <div>
@@ -412,7 +412,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   )
 
   // Shared clear button
-  const clearButton = activeFilterCount > 0 ? (
+  const renderClearButton = () => activeFilterCount > 0 ? (
     <div className="p-4 border-t border-gray-200 flex-shrink-0">
       <Button onClick={clearAllFilters} variant="outline" className="w-full bg-transparent">
         Clear All Filters
@@ -421,7 +421,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   ) : null
 
   // Shared listing card renderer
-  const listingCards = (
+  const renderListingCards = () => (
     <div className="flex-1 overflow-y-auto p-4 space-y-3">
       {filteredLocations.length === 0 ? (
         <div className="text-center text-gray-500 py-12">
@@ -549,7 +549,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            {filterContent}
+            {renderFilterContent()}
             <div className="p-4 border-t border-gray-200 flex-shrink-0 flex gap-2">
               {activeFilterCount > 0 && (
                 <Button onClick={clearAllFilters} variant="outline" className="flex-1">
@@ -589,7 +589,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            {listingCards}
+            {renderListingCards()}
           </div>
         )}
       </div>
@@ -606,8 +606,8 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
               </p>
             )}
           </div>
-          {filterContent}
-          {clearButton}
+          {renderFilterContent()}
+          {renderClearButton()}
         </div>
 
         {/* Listings panel */}
@@ -627,7 +627,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
               </div>
             </div>
           </div>
-          {listingCards}
+          {renderListingCards()}
         </div>
 
         {/* Map area with search */}
