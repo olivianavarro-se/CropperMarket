@@ -41,42 +41,42 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-10 bg-[#FAF8F5] overflow-y-auto z-50">
-      <div className="w-full max-w-md my-auto">
+    <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-8 bg-[#FAF8F5] overflow-y-auto z-50">
+      <div className="w-full max-w-sm my-auto">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-2 text-center mb-1">
+          <div className="flex flex-col items-center gap-1 text-center mb-0.5">
             <Image
               src="/images/hay-20cropper.png"
               alt="HayCropper Marketplace"
-              width={300}
-              height={225}
-              className="object-contain w-[200px] md:w-[400px]"
+              width={240}
+              height={180}
+              className="object-contain w-[160px] md:w-[240px]"
             />
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
-            <CardHeader className="pb-1 space-y-0">
-              <CardTitle className="text-2xl text-[#65411C] font-bold mb-0.5">Reset Password</CardTitle>
-              <CardDescription className="text-[#8A6842]">
+            <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
+              <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Reset Password</CardTitle>
+              <CardDescription className="text-[#8A6842] text-sm">
                 Enter your email address and we'll send you a link to reset your password
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="pt-2 pb-3 px-4">
               {success ? (
-                <div className="flex flex-col gap-4">
-                  <div className="rounded-lg bg-[#F0F5EB] p-4 text-sm text-[#5A7A3A] border border-[#D4E4C8]">
+                <div className="flex flex-col gap-3">
+                  <div className="rounded-lg bg-[#F0F5EB] p-3 text-xs text-[#5A7A3A] border border-[#D4E4C8]">
                     Check your email for a password reset link. It may take a few minutes to arrive.
                   </div>
                   <Link href="/auth/login">
-                    <Button variant="outline" className="w-full bg-transparent border-[#D4AF8E] text-[#65411C] hover:bg-[#FAF8F5]">
+                    <Button variant="outline" className="w-full bg-transparent border-[#D4AF8E] text-[#65411C] hover:bg-[#FAF8F5] h-9 text-sm">
                       Back to Login
                     </Button>
                   </Link>
                 </div>
               ) : (
                 <form onSubmit={handleResetPassword}>
-                  <div className="flex flex-col gap-6">
-                    <div className="grid gap-2">
-                      <Label htmlFor="email" className="text-[#65411C]">
+                  <div className="flex flex-col gap-3">
+                    <div className="grid gap-1">
+                      <Label htmlFor="email" className="text-[#65411C] text-sm">
                         Email
                       </Label>
                       <Input
@@ -86,19 +86,19 @@ export default function ForgotPasswordPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="border-[#D4AF8E]"
+                        className="border-[#D4AF8E] h-9"
                       />
                     </div>
-                    {error && <p className="text-sm text-red-500">{error}</p>}
+                    {error && <p className="text-xs text-red-500">{error}</p>}
                     <Button
                       type="submit"
-                      className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold text-lg h-12 shadow-md hover:shadow-lg transition-all"
+                      className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold text-sm h-9 shadow-md hover:shadow-lg transition-all"
                       disabled={isLoading}
                     >
                       {isLoading ? "Sending..." : "Send Reset Link"}
                     </Button>
                   </div>
-                  <div className="mt-6 text-center text-sm text-[#8A6842]">
+                  <div className="mt-3 text-center text-xs text-[#8A6842]">
                     Remember your password?{" "}
                     <Link
                       href="/auth/login"
