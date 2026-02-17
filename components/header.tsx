@@ -128,35 +128,34 @@ export function Header() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="border-b bg-[#FFFDF8]/90 backdrop-blur-md shadow-sm z-10 sticky top-0 border-[#E8D5B5]">
-      <div className={`px-4 pr-4 py-3 flex items-center justify-between ${isHomePage ? "pl-6" : ""}`}>
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+    <header className="border-b bg-hay-bg/90 backdrop-blur-md shadow-sm z-10 sticky top-0 border-hay-border">
+      <div className="px-3 md:px-4 py-2 md:py-3 flex items-center justify-between">
+        {/* Logo -- slightly smaller on mobile */}
+        <Link href="/" className="flex items-center gap-1.5 md:gap-2 hover:opacity-80 transition-opacity">
           <Image
             src="/images/hay-20cropper-20logo.png"
             alt="HayCropper Logo"
             width={64}
             height={64}
-            className="object-contain"
+            className="object-contain w-10 h-10 md:w-16 md:h-16"
           />
           <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-[#65411C] tracking-wide">HAYCROPPER</h1>
-            <span className="text-[10px] text-[#8A6842] tracking-widest -mt-1">MARKETPLACE</span>
+            <h1 className="text-base md:text-xl font-bold text-hay-dark tracking-wide">HAYCROPPER</h1>
+            <span className="text-[8px] md:text-[10px] text-hay-medium tracking-widest -mt-0.5 md:-mt-1">MARKETPLACE</span>
           </div>
         </Link>
 
-        <nav className="flex items-center gap-3">
+        {/* Desktop nav -- hidden on mobile, shown on md+ (unchanged from before) */}
+        <nav className="hidden md:flex items-center gap-3">
           {user ? (
             <>
               {!isLoadingProfile && (
-                <span className="text-sm text-[#8A6842]">
+                <span className="text-sm text-hay-medium">
                   Hello, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'User'}
                 </span>
               )}
               <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
-              </Button>
-              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
-                <Link href="/search">Search</Link>
               </Button>
               <Button asChild variant={isActive("/dashboard") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/dashboard">Dashboard</Link>
@@ -170,9 +169,6 @@ export function Header() {
               <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
-              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
-                <Link href="/search">Search</Link>
-              </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/auth/login">Login</Link>
               </Button>
@@ -182,6 +178,26 @@ export function Header() {
             </>
           )}
         </nav>
+
+        {/* Mobile nav -- only essential actions, bottom nav handles the rest */}
+        <div className="flex md:hidden items-center gap-2">
+          {user ? (
+            !isLoadingProfile && (
+              <span className="text-xs text-hay-medium truncate max-w-[140px]">
+                Hi, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'there'}
+              </span>
+            )
+          ) : (
+            <>
+              <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                <Link href="/auth/login">Login</Link>
+              </Button>
+              <Button asChild size="sm" className="h-8 px-3 text-xs">
+                <Link href="/auth/sign-up">Sign Up</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   )

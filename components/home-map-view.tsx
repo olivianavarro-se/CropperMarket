@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search } from "lucide-react"
+import { Search, SlidersHorizontal, X, ChevronUp, ChevronDown, List } from "lucide-react"
 import { HAY_TYPES } from "@/lib/hay-types"
 import { useUserLocation } from "@/hooks/use-user-location"
 import type { LocationWithSupplier } from "@/lib/types"
@@ -37,6 +37,9 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   const [searchTerm, setSearchTerm] = useState("")
   const { location: userLocation, loading: locationLoading } = useUserLocation()
   const [selectedLocation, setSelectedLocation] = useState<LocationWithSupplier | null>(null)
+  // Mobile-only state
+  const [mobileShowFilters, setMobileShowFilters] = useState(false)
+  const [mobileShowListings, setMobileShowListings] = useState(false)
   const [filters, setFilters] = useState<FilterOptions>({
     type: "all",
     hasInventory: false,
@@ -198,19 +201,9 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
     }))
   }
 
-  return (
-    <div className="relative w-full h-full">
-      <div className="absolute left-0 top-0 bottom-0 w-80 border-r border-gray-200 bg-white flex flex-col overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
-          <h3 className="font-semibold text-lg">Filters</h3>
-          {activeFilterCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
-            </p>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+  // Shared filter panel content (function to return fresh JSX each call)
+  const renderFilterContent = () => (
+    <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {/* Supplier Type */}
           <div>
             <Label className="text-sm font-semibold mb-3 block">Supplier Type</Label>
@@ -416,93 +409,228 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
           )}
         </div>
 
-        {/* Clear Filters Button */}
-        {activeFilterCount > 0 && (
-          <div className="p-4 border-t border-gray-200 flex-shrink-0">
-            <Button onClick={clearAllFilters} variant="outline" className="w-full bg-transparent">
-              Clear All Filters
-            </Button>
-          </div>
-        )}
+  )
+
+  // Shared clear button
+  const renderClearButton = () => activeFilterCount > 0 ? (
+    <div className="p-4 border-t border-hay-border flex-shrink-0">
+      <Button onClick={clearAllFilters} variant="outline" className="w-full bg-transparent">
+        Clear All Filters
+      </Button>
+    </div>
+  ) : null
+
+  // Shared listing card renderer
+  const renderListingCards = () => (
+    <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      {filteredLocations.length === 0 ? (
+        <div className="text-center text-gray-500 py-12">
+          No locations match your filters. Try adjusting your search criteria.
+        </div>
+      ) : (
+        filteredLocations.map((location) => (
+          <button
+            key={location.id}
+            onClick={() => {
+              setSelectedLocation(location)
+              setMobileShowListings(false)
+            }}
+            className={`w-full p-4 border rounded-xl hover:shadow-lg transition-all duration-200 text-left ${
+              selectedLocation?.id === location.id
+                ? "border-hay-gold bg-hay-glow/20 shadow-md"
+                : "border-border bg-white hover:border-hay-border"
+            }`}
+          >
+            <div className="flex items-start gap-3 mb-2">
+              {location.supplier.logo_url && (
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+                  <img
+                    src={location.supplier.logo_url || "/placeholder.svg"}
+                    alt={`${location.supplier.business_name} logo`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="flex items-start justify-between mb-1">
+                    <div className="font-semibold text-base text-foreground">{location.supplier.business_name}</div>
+                  <div
+                    className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
+                      location.supplier.supplier_type === "broker" ? "bg-broker" : "bg-grower"
+                    }`}
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground capitalize mb-1">
+                  {location.supplier.supplier_type === "broker" ? "Broker" : "Grower"} • {location.name}
+                </div>
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground mb-2">
+              <div>{location.address}</div>
+              <div>
+                {location.city}, {location.state} {location.zip_code}
+              </div>
+            </div>
+            {location.inventory.length > 0 && (
+              <div className="text-xs text-hay-medium">
+                {location.inventory.length} item{location.inventory.length !== 1 ? "s" : ""} available
+              </div>
+            )}
+          </button>
+        ))
+      )}
+    </div>
+  )
+
+  return (
+    <div className="relative w-full h-full flex flex-col md:block">
+      {/* ==================== MOBILE SEARCH BAR (< md) -- in document flow, above map ==================== */}
+      <div className="md:hidden flex gap-2 p-3 bg-hay-bg border-b border-hay-border shrink-0">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            placeholder="Search suppliers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 border-gray-200 h-10 text-sm"
+          />
+        </div>
+        <Button
+          variant={mobileShowFilters ? "default" : "outline"}
+          size="icon"
+          className="h-10 w-10 shrink-0"
+          onClick={() => { setMobileShowFilters(!mobileShowFilters); setMobileShowListings(false) }}
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div className="absolute left-80 top-0 bottom-0 w-[450px] border-r bg-gradient-to-b from-white to-gray-50/50 flex flex-col overflow-hidden shadow-lg">
+      {/* ===== SINGLE SHARED MAP (fills remaining space on mobile, offset on desktop) ===== */}
+      <div className="relative flex-1 md:absolute md:inset-0 md:left-[770px] md:top-[57px] flex flex-col">
+        <MapView
+          locations={filteredLocations}
+          isAuthenticated={isAuthenticated}
+          userId={userId}
+          userSupplierId={userSupplierId}
+          userLocation={userLocation}
+          selectedLocation={selectedLocation}
+          onLocationSelect={setSelectedLocation}
+          activeFilters={filters}
+        />
+      </div>
+
+      {/* Mobile floating listings toggle button - hide when location card is open */}
+      {!selectedLocation && (
+        <div className="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
+          <Button
+            onClick={() => { setMobileShowListings(!mobileShowListings); setMobileShowFilters(false) }}
+            className="shadow-lg rounded-full px-5 h-10 gap-2 bg-hay-dark text-white hover:bg-hay-dark-hover"
+          >
+            <List className="h-4 w-4" />
+            {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
+            {mobileShowListings ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Mobile filter overlay */}
+      {mobileShowFilters && (
+        <div className="md:hidden absolute inset-0 z-20 bg-white flex flex-col">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+            <div>
+              <h3 className="font-semibold text-lg">Filters</h3>
+              {activeFilterCount > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setMobileShowFilters(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          {renderFilterContent()}
+          <div className="p-4 border-t border-gray-200 flex-shrink-0 flex gap-2">
+            {activeFilterCount > 0 && (
+              <Button onClick={clearAllFilters} variant="outline" className="flex-1">
+                Clear All
+              </Button>
+            )}
+            <Button onClick={() => setMobileShowFilters(false)} className="flex-1 bg-hay-dark hover:bg-hay-dark-hover text-white">
+              Show {filteredLocations.length} Results
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile listings bottom sheet */}
+      {mobileShowListings && (
+        <div className="md:hidden absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[70vh]">
+          <div className="flex items-center justify-center pt-2 pb-1">
+            <div className="w-10 h-1 rounded-full bg-gray-300" />
+          </div>
+          <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
+              </h2>
+              <div className="flex gap-2 mt-1">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-grower"></div>
+                  <span className="text-[10px] font-medium text-foreground">Grower</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-broker"></div>
+                  <span className="text-[10px] font-medium text-foreground">Broker</span>
+                </div>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setMobileShowListings(false)}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          {renderListingCards()}
+        </div>
+      )}
+
+      {/* ==================== DESKTOP PANELS (>= md) ==================== */}
+      {/* Filter sidebar */}
+      <div className="hidden md:flex absolute left-0 top-0 bottom-0 w-80 border-r border-hay-border bg-card flex-col overflow-hidden z-10">
+        <div className="p-4 border-b border-hay-border flex-shrink-0">
+          <h3 className="font-semibold text-lg">Filters</h3>
+          {activeFilterCount > 0 && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
+            </p>
+          )}
+        </div>
+        {renderFilterContent()}
+        {renderClearButton()}
+      </div>
+
+      {/* Listings panel */}
+      <div className="hidden md:flex absolute left-80 top-0 bottom-0 w-[450px] border-r border-hay-border bg-card flex-col overflow-hidden shadow-lg z-10">
         <div className="p-6 border-b bg-white/80 backdrop-blur-sm flex-shrink-0 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
             {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
           </h2>
-
           <div className="flex gap-3 mt-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-full border border-green-100">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-green-900">Grower</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-grower-bg rounded-full border border-grower-border">
+              <div className="w-2.5 h-2.5 rounded-full bg-grower shadow-sm"></div>
+              <span className="text-xs font-semibold text-foreground">Grower</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-50 rounded-full border border-yellow-100">
-              <div className="w-2.5 h-2.5 rounded-full bg-yellow-600 shadow-sm"></div>
-              <span className="text-xs font-semibold text-yellow-900">Broker</span>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-broker-bg rounded-full border border-broker-border">
+              <div className="w-2.5 h-2.5 rounded-full bg-broker shadow-sm"></div>
+              <span className="text-xs font-semibold text-foreground">Broker</span>
             </div>
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filteredLocations.length === 0 ? (
-            <div className="text-center text-gray-500 py-12">
-              No locations match your filters. Try adjusting your search criteria.
-            </div>
-          ) : (
-            filteredLocations.map((location) => (
-              <button
-                key={location.id}
-                onClick={() => setSelectedLocation(location)}
-                className={`w-full p-4 border rounded-xl hover:shadow-lg transition-all duration-200 text-left ${
-                  selectedLocation?.id === location.id
-                    ? "border-green-500 bg-gradient-to-br from-green-50 to-green-100/50 shadow-md"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className="flex items-start gap-3 mb-2">
-                  {location.supplier.logo_url && (
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-                      <img
-                        src={location.supplier.logo_url || "/placeholder.svg"}
-                        alt={`${location.supplier.business_name} logo`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="font-semibold text-base text-gray-900">{location.supplier.business_name}</div>
-                      <div
-                        className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
-                          location.supplier.supplier_type === "broker" ? "bg-yellow-600" : "bg-green-600"
-                        }`}
-                      />
-                    </div>
-                    <div className="text-sm text-gray-600 capitalize mb-1">
-                      {location.supplier.supplier_type === "broker" ? "Broker" : "Grower"} • {location.name}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">
-                  <div>{location.address}</div>
-                  <div>
-                    {location.city}, {location.state} {location.zip_code}
-                  </div>
-                </div>
-                {location.inventory.length > 0 && (
-                  <div className="text-xs text-gray-500">
-                    {location.inventory.length} item{location.inventory.length !== 1 ? "s" : ""} available
-                  </div>
-                )}
-              </button>
-            ))
-          )}
-        </div>
+        {renderListingCards()}
       </div>
 
-      <div className="fixed left-[770px] top-16 bottom-0 right-0 flex flex-col">
-        <div className="p-4 bg-white border-b border-gray-200 flex-shrink-0">
+      {/* Desktop search bar above map */}
+      <div className="hidden md:block absolute left-[770px] top-0 right-0 z-10">
+        <div className="p-4 bg-card border-b border-hay-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
@@ -512,23 +640,6 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
               className="pl-10"
             />
           </div>
-        </div>
-
-        <div className="flex-1">
-          <MapView
-            locations={filteredLocations}
-            selectedLocation={selectedLocation}
-            setSelectedLocation={setSelectedLocation}
-            userLocation={userLocation}
-            isAuthenticated={isAuthenticated}
-            activeFilters={filters}
-            userId={userId}
-            userSupplierId={userSupplierId}
-            userLocation={userLocation}
-            selectedLocation={selectedLocation}
-            onLocationSelect={setSelectedLocation}
-            activeFilters={filters}
-          />
         </div>
       </div>
     </div>

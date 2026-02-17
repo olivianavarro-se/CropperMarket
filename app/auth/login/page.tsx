@@ -43,16 +43,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 md:p-10 bg-[#FAF8F5]">
-      <div className="w-full max-w-md">
+    <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-10 bg-[#FAF8F5] overflow-y-auto z-50">
+      <div className="w-full max-w-md my-auto">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-4 text-center mb-1">
+          <div className="flex flex-col items-center gap-2 text-center mb-1">
             <Image
               src="/images/hay-20cropper.png"
               alt="HayCropper Marketplace"
-              width={400}
-              height={300}
-              className="object-contain"
+              width={300}
+              height={225}
+              className="object-contain w-[200px] md:w-[400px]"
             />
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">

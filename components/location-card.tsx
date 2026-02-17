@@ -79,12 +79,12 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
   const isOwnFarm = userSupplierId && userSupplierId === supplier.id
 
   return (
-    <Card className="shadow-2xl border-0 overflow-hidden">
-      <CardHeader className="pb-3 bg-gradient-to-r from-green-50 to-yellow-50 border-b">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3 flex-1">
+    <Card className="shadow-2xl border-0 overflow-hidden text-sm">
+      <CardHeader className="p-3 md:p-4 pb-2 md:pb-3 bg-gradient-to-r from-grower-bg to-broker-bg border-b border-hay-border">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
             {supplier.logo_url && (
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-white border-2 border-gray-200 shrink-0">
+              <div className="w-10 h-10 md:w-14 md:h-14 rounded-full overflow-hidden bg-white border-2 border-hay-border shrink-0">
                 <img
                   src={supplier.logo_url || "/placeholder.svg"}
                   alt={`${supplier.business_name} logo`}
@@ -92,39 +92,39 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 />
               </div>
             )}
-            <div className="flex-1">
-              <CardTitle className="text-xl mb-1">{supplier.business_name}</CardTitle>
-              <p className="text-sm text-gray-600 mb-2">{location.name}</p>
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-base md:text-lg mb-0.5 truncate">{supplier.business_name}</CardTitle>
+              <p className="text-xs md:text-sm text-muted-foreground mb-1.5">{location.name}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge 
                   variant="outline" 
-                  className={
+                  className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 ${
                     supplier.supplier_type === "broker" 
-                      ? "bg-yellow-50 border-yellow-200 text-yellow-800 shadow-sm" 
-                      : "bg-green-50 border-green-200 text-green-800 shadow-sm"
-                  }
+                      ? "bg-broker-bg border-broker-border text-broker shadow-sm" 
+                      : "bg-grower-bg border-grower-border text-grower shadow-sm"
+                  }`}
                 >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
                 {hasDelivery && (
-                  <Badge variant="outline" className="bg-green-50 border-green-200 text-green-800 shadow-sm">
-                    Delivery Available
+                  <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 bg-grower-bg border-grower-border text-grower shadow-sm">
+                    Delivery
                   </Badge>
                 )}
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 hover:bg-white/50">
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 hover:bg-white/50 h-7 w-7 md:h-8 md:w-8">
+            <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="h-4 w-4 mt-0.5 text-green-600 shrink-0" />
-          <div className="flex flex-col text-gray-700 leading-relaxed">
-            <span className="font-medium">{location.address}</span>
+      <CardContent className="space-y-2.5 md:space-y-3 p-3 md:p-4 pt-2.5 md:pt-3">
+        <div className="flex items-start gap-2 text-xs md:text-sm">
+          <MapPin className="h-3.5 w-3.5 mt-0.5 text-hay-gold shrink-0" />
+          <div className="flex flex-col text-muted-foreground leading-relaxed">
+            <span className="font-medium text-foreground">{location.address}</span>
             <span>
               {location.city}, {location.state} {location.zip_code}
             </span>
@@ -133,79 +133,72 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
 
         {isAuthenticated ? (
           supplier.email && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Mail className="h-4 w-4" />
-              <span>{supplier.email}</span>
+            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <Mail className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{supplier.email}</span>
             </div>
           )
         ) : (
-          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded">
-            <Lock className="h-4 w-4" />
-            <span className="italic">Sign in to view contact information</span>
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
+            <Lock className="h-3.5 w-3.5 shrink-0" />
+            <span className="italic">Sign in to view contact info</span>
           </div>
         )}
 
         {isAuthenticated ? (
           supplier.phone && (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Phone className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
+              <Phone className="h-3.5 w-3.5 shrink-0" />
               <span>{supplier.phone}</span>
             </div>
           )
         ) : (
-          <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2 rounded">
-            <Lock className="h-4 w-4" />
-            <span className="italic">Sign in to view phone number</span>
+          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
+            <Lock className="h-3.5 w-3.5 shrink-0" />
+            <span className="italic">Sign in to view phone</span>
           </div>
         )}
 
-        <div className="border-t pt-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Package className="h-4 w-4" />
-                <h3 className="font-semibold">Inventory at this Location</h3>
-              </div>
-              <div className="flex items-center gap-3 ml-6">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${location.delivery_available ? (supplier.supplier_type === "broker" ? "bg-yellow-500" : "bg-green-600") : "bg-gray-400"}`}></div>
-                  <span className="text-xs text-gray-600">
-                    {location.delivery_available ? "Delivery Available" : "No Delivery"}
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="border-t border-hay-border pt-2.5 md:pt-3">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Package className="h-3.5 w-3.5 text-hay-gold" />
+            <h3 className="font-semibold text-xs md:text-sm">Inventory</h3>
+            {location.delivery_available && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto bg-grower-bg border-grower-border text-grower">
+                Delivery
+              </Badge>
+            )}
           </div>
 
           {filteredInventory.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-1.5 md:space-y-2">
               {filteredInventory.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-green-50/30 rounded-xl border border-gray-100 hover:shadow-md transition-shadow"
+                  className="flex items-center justify-between p-2 md:p-2.5 bg-muted/50 rounded-lg border border-border hover:shadow-sm transition-shadow"
                 >
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{item.product_name}</div>
-                    {item.description && <div className="text-xs text-gray-500 mt-1 italic">{item.description}</div>}
-                    <div className="text-xs text-gray-600 mt-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
+                    {item.description && <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5 italic truncate">{item.description}</div>}
+                    <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
                       {item.quantity} {getStockUnitLabel(item.stock_unit || "tons")} in stock
-                      {item.delivery_available && " • Delivery available"}
+                      {item.delivery_available && " • Delivery"}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-2 shrink-0">
                     {item.pricing_options && item.pricing_options.length > 0 ? (
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {item.pricing_options.map((option, idx) => (
                           <div key={idx} className="text-right">
-                            <div className="font-semibold text-green-700">${option.price}</div>
-                            <div className="text-xs text-gray-500">{getSellingUnitLabel(option.unit)}</div>
+                            <div className="font-semibold text-xs md:text-sm text-hay-dark">${option.price}</div>
+                            <div className="text-[10px] md:text-xs text-muted-foreground">{getSellingUnitLabel(option.unit)}</div>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <>
-                        <div className="font-semibold text-green-700">${item.price_per_unit}</div>
-                        <div className="text-xs text-gray-500">{getSellingUnitLabel(item.selling_unit || "tons")}</div>
+                        <div className="font-semibold text-xs md:text-sm text-hay-dark">${item.price_per_unit}</div>
+                        <div className="text-[10px] md:text-xs text-muted-foreground">{getSellingUnitLabel(item.selling_unit || "tons")}</div>
                       </>
                     )}
                   </div>
@@ -213,22 +206,22 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">
-              {location.inventory.length > 0 ? "No inventory items match the current filters" : "No inventory listed"}
+            <p className="text-xs text-muted-foreground">
+              {location.inventory.length > 0 ? "No items match filters" : "No inventory listed"}
             </p>
           )}
         </div>
 
         {!isOwnFarm && (
           <Button
-            size="lg"
-            className="w-full shadow-md hover:shadow-lg transition-all"
+            size="sm"
+            className="w-full shadow-md hover:shadow-lg transition-all h-8 md:h-9 text-xs md:text-sm bg-hay-dark hover:bg-hay-dark-hover text-white"
             onClick={handleContactClick}
           >
             {!isAuthenticated ? (
               <>
-                <Lock className="w-4 h-4 mr-2" />
-                Sign In to Contact Supplier
+                <Lock className="w-3.5 h-3.5 mr-1.5" />
+                Sign In to Contact
               </>
             ) : (
               "Contact Supplier"
