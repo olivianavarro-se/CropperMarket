@@ -189,8 +189,8 @@ export function Header() {
         <div className="flex md:hidden items-center gap-2">
           {user ? (
             !isLoadingProfile && (
-              <span className="text-xs text-hay-medium truncate max-w-[120px]">
-                Hi, {(profile?.full_name && profile.full_name.trim().split(' ')[0]) || 'there'}
+              <span className="text-xs text-hay-medium truncate max-w-[140px]">
+                Hi, {(profile?.full_name && profile.full_name.trim()) || user.email?.split('@')[0] || 'there'}
               </span>
             )
           ) : (
