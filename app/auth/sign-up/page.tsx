@@ -73,25 +73,25 @@ export default function SignUpPage() {
 
   return (
     <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-6 bg-[#FAF8F5] overflow-y-auto z-50">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-sm">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-2 text-center mb-1">
+          <div className="flex flex-col items-center gap-1 text-center mb-0.5">
             <Image
               src="/images/hay-20cropper.png"
               alt="HayCropper Marketplace"
-              width={360}
-              height={270}
-              className="object-contain"
+              width={240}
+              height={180}
+              className="object-contain w-[160px] md:w-[240px]"
             />
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
-            <CardHeader className="pb-1 space-y-0 pt-4 px-6">
-              <CardTitle className="text-xl text-[#65411C] font-bold mb-0.5">Create Account</CardTitle>
-              <CardDescription className="text-[#8A6842] text-base">Join the HayCropper marketplace</CardDescription>
+            <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
+              <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Create Account</CardTitle>
+              <CardDescription className="text-[#8A6842] text-sm">Join the HayCropper marketplace</CardDescription>
             </CardHeader>
-            <CardContent className="pt-1 pb-2 px-6">
+            <CardContent className="pt-2 pb-3 px-4">
               <form onSubmit={handleSignUp}>
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2.5">
                   <div className="grid gap-1">
                     <Label htmlFor="full-name" className="text-[#65411C] text-sm">
                       Full Name
@@ -103,7 +103,7 @@ export default function SignUpPage() {
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="border-[#D4AF8E] h-10 text-base"
+                      className="border-[#D4AF8E] h-9"
                     />
                   </div>
                   <div className="grid gap-1">
@@ -117,7 +117,7 @@ export default function SignUpPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-[#D4AF8E] h-10 text-base"
+                      className="border-[#D4AF8E] h-9"
                     />
                   </div>
                   <div className="grid gap-1">
@@ -128,7 +128,7 @@ export default function SignUpPage() {
                       value={accountType}
                       onValueChange={(value: "grower" | "broker" | "buyer") => setAccountType(value)}
                     >
-                      <SelectTrigger id="account-type" className="border-[#D4AF8E] h-10 text-base">
+                      <SelectTrigger id="account-type" className="border-[#D4AF8E] h-9">
                         <SelectValue placeholder="Select account type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -149,14 +149,14 @@ export default function SignUpPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 border-[#D4AF8E] h-10 text-base"
+                        className="pr-10 border-[#D4AF8E] h-9"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
@@ -171,27 +171,27 @@ export default function SignUpPage() {
                         required
                         value={repeatPassword}
                         onChange={(e) => setRepeatPassword(e.target.value)}
-                        className="pr-10 border-[#D4AF8E] h-10 text-base"
+                        className="pr-10 border-[#D4AF8E] h-9"
                       />
                       <button
                         type="button"
                         onClick={() => setShowRepeatPassword(!showRepeatPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
                       >
-                        {showRepeatPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showRepeatPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
-                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  {error && <p className="text-xs text-red-500">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold h-10 shadow-md hover:shadow-lg transition-all text-base"
+                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold h-9 shadow-md hover:shadow-lg transition-all text-sm"
                     disabled={isLoading}
                   >
                     {isLoading ? "Creating an account..." : "Sign up"}
                   </Button>
                 </div>
-                <div className="mt-2 text-center text-sm text-[#8A6842]">
+                <div className="mt-2 text-center text-xs text-[#8A6842]">
                   Already have an account?{" "}
                   <Link
                     href="/auth/login"

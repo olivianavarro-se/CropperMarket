@@ -43,28 +43,28 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-10 bg-[#FAF8F5] overflow-y-auto z-50">
-      <div className="w-full max-w-md my-auto">
+    <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-8 bg-[#FAF8F5] overflow-y-auto z-50">
+      <div className="w-full max-w-sm my-auto">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-2 text-center mb-1">
+          <div className="flex flex-col items-center gap-1 text-center mb-0.5">
             <Image
               src="/images/hay-20cropper.png"
               alt="HayCropper Marketplace"
-              width={300}
-              height={225}
-              className="object-contain w-[200px] md:w-[400px]"
+              width={240}
+              height={180}
+              className="object-contain w-[160px] md:w-[240px]"
             />
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
-            <CardHeader className="pb-1 space-y-0">
-              <CardTitle className="text-2xl text-[#65411C] font-bold mb-0.5">Welcome Back</CardTitle>
-              <CardDescription className="text-[#8A6842]">Sign in to access your marketplace</CardDescription>
+            <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
+              <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Welcome Back</CardTitle>
+              <CardDescription className="text-[#8A6842] text-sm">Sign in to access your marketplace</CardDescription>
             </CardHeader>
-            <CardContent className="pt-2">
+            <CardContent className="pt-2 pb-3 px-4">
               <form onSubmit={handleLogin}>
-                <div className="flex flex-col gap-6">
-                  <div className="grid gap-2">
-                    <Label htmlFor="email" className="text-[#65411C]">
+                <div className="flex flex-col gap-3">
+                  <div className="grid gap-1">
+                    <Label htmlFor="email" className="text-[#65411C] text-sm">
                       Email
                     </Label>
                     <Input
@@ -74,17 +74,17 @@ export default function LoginPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-[#D4AF8E]"
+                      className="border-[#D4AF8E] h-9"
                     />
                   </div>
-                  <div className="grid gap-2">
+                  <div className="grid gap-1">
                     <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="text-[#65411C]">
+                      <Label htmlFor="password" className="text-[#65411C] text-sm">
                         Password
                       </Label>
                       <Link
                         href="/auth/forgot-password"
-                        className="text-sm text-[#F0B349] hover:text-[#FCE2A4] underline underline-offset-4"
+                        className="text-xs text-[#F0B349] hover:text-[#FCE2A4] underline underline-offset-4"
                       >
                         Forgot password?
                       </Link>
@@ -96,27 +96,27 @@ export default function LoginPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pr-10 border-[#D4AF8E]"
+                        className="pr-10 border-[#D4AF8E] h-9"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
                       >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </div>
                   </div>
-                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  {error && <p className="text-xs text-red-500">{error}</p>}
                   <Button
                     type="submit"
-                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold text-lg h-12 shadow-md hover:shadow-lg transition-all"
+                    className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold text-sm h-9 shadow-md hover:shadow-lg transition-all"
                     disabled={isLoading}
                   >
                     {isLoading ? "Logging in..." : "Login"}
                   </Button>
                 </div>
-                <div className="mt-6 text-center text-sm text-[#8A6842]">
+                <div className="mt-3 text-center text-xs text-[#8A6842]">
                   Don&apos;t have an account?{" "}
                   <Link
                     href="/auth/sign-up"
