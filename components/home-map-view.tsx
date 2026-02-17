@@ -519,17 +519,19 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
         />
       </div>
 
-      {/* Mobile floating listings toggle button */}
-      <div className="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
-        <Button
-          onClick={() => { setMobileShowListings(!mobileShowListings); setMobileShowFilters(false) }}
-          className="shadow-lg rounded-full px-5 h-10 gap-2 bg-hay-dark text-white hover:bg-hay-dark-hover"
-        >
-          <List className="h-4 w-4" />
-          {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
-          {mobileShowListings ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-        </Button>
-      </div>
+      {/* Mobile floating listings toggle button - hide when location card is open */}
+      {!selectedLocation && (
+        <div className="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
+          <Button
+            onClick={() => { setMobileShowListings(!mobileShowListings); setMobileShowFilters(false) }}
+            className="shadow-lg rounded-full px-5 h-10 gap-2 bg-hay-dark text-white hover:bg-hay-dark-hover"
+          >
+            <List className="h-4 w-4" />
+            {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
+            {mobileShowListings ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+          </Button>
+        </div>
+      )}
 
       {/* Mobile filter overlay */}
       {mobileShowFilters && (
