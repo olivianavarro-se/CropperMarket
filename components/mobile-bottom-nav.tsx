@@ -13,12 +13,25 @@ export function MobileBottomNav() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
-      setIsLoggedIn(!!data.user)
+    
+    // Get initial auth state with error handling
+    supabase.auth.getUser().then(({ data, error }) => {
+      if (error) {
+        // Invalid/expired token - user is not logged in
+        setIsLoggedIn(false)
+      } else {
+        setIsLoggedIn(!!data.user)
+      }
+    }).catch(() => {
+      // Any auth errors mean user is not authenticated
+      setIsLoggedIn(false)
     })
+    
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session?.user)
     })
+    
     return () => subscription.unsubscribe()
   }, [])
 
