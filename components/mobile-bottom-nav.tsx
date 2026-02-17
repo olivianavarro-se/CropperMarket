@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Map, Search, LayoutDashboard, User } from "lucide-react"
+import { Map, LayoutDashboard, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
@@ -41,7 +41,6 @@ export function MobileBottomNav() {
   // Always-visible tabs, plus auth-only tabs
   const navItems = [
     { href: "/", label: "Map", icon: Map },
-    { href: "/search", label: "Search", icon: Search },
     ...(isLoggedIn
       ? [
           { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },

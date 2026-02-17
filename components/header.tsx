@@ -157,9 +157,6 @@ export function Header() {
               <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
               </Button>
-              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
-                <Link href="/search">Search</Link>
-              </Button>
               <Button asChild variant={isActive("/dashboard") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
@@ -171,9 +168,6 @@ export function Header() {
             <>
               <Button asChild variant={isActive("/") ? "default" : "outline"} size="sm" className="shadow-sm">
                 <Link href="/">Home</Link>
-              </Button>
-              <Button asChild variant={isActive("/search") ? "default" : "outline"} size="sm" className="shadow-sm">
-                <Link href="/search">Search</Link>
               </Button>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/auth/login">Login</Link>
