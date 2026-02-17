@@ -388,7 +388,7 @@ export function MapView({
       <div id="map" className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute top-2 left-2 right-2 md:top-4 md:right-4 md:left-auto md:w-[420px] max-h-[calc(100vh-120px)] overflow-y-auto z-10">
+        <div className="absolute top-2 left-2 right-2 md:top-4 md:right-4 md:left-auto md:w-[420px] max-h-[calc(100vh-180px)] md:max-h-[calc(100vh-120px)] overflow-y-auto z-10">
         <LocationCard
           location={selectedLocation}
           onClose={() => onLocationSelect?.(null)}
