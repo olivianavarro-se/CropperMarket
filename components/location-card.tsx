@@ -80,7 +80,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
 
   return (
     <Card className="shadow-2xl border-0 overflow-hidden text-sm">
-      <CardHeader className="p-3 md:p-4 pb-2 md:pb-3 bg-gradient-to-r from-grower-bg to-broker-bg border-b border-hay-border">
+      <CardHeader className="p-3 md:p-4 pb-2 md:pb-3 bg-card border-b border-hay-border">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
             {supplier.logo_url && (
