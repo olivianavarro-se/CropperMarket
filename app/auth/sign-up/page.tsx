@@ -75,14 +75,16 @@ export default function SignUpPage() {
     <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-6 bg-[#FAF8F5] overflow-y-auto z-50">
       <div className="w-full max-w-sm">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-1 text-center mb-0.5">
-            <Image
-              src="/images/hay-20cropper.png"
-              alt="HayCropper Marketplace"
-              width={240}
-              height={180}
-              className="object-contain w-[160px] md:w-[240px]"
-            />
+          <div className="flex flex-col items-center gap-1 text-center mb-2">
+            <Link href="/" className="cursor-pointer">
+              <Image
+                src="/images/hay-20cropper.png"
+                alt="HayCropper Marketplace"
+                width={360}
+                height={270}
+                className="object-contain w-[240px] md:w-[320px]"
+              />
+            </Link>
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
             <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
