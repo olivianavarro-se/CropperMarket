@@ -566,10 +566,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       {/* Mobile listings bottom sheet */}
       {mobileShowListings && (
         <div className="md:hidden absolute bottom-0 left-0 right-0 z-20 bg-white rounded-t-2xl shadow-2xl flex flex-col max-h-[70vh]">
-          <div className="flex items-center justify-center pt-2 pb-1">
-            <div className="w-10 h-1 rounded-full bg-gray-300" />
-          </div>
-          <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-gray-900">
                 {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
