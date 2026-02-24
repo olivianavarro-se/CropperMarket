@@ -54,6 +54,8 @@ export default function LoginPage() {
                 width={360}
                 height={270}
                 className="object-contain w-[240px] md:w-[320px]"
+                loading="eager"
+                priority
               />
             </Link>
           </div>
