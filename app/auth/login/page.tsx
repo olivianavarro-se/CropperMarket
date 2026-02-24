@@ -47,15 +47,14 @@ export default function LoginPage() {
       <div className="w-full max-w-sm my-auto">
         <div className="flex flex-col">
           <div className="flex flex-col items-center gap-1 text-center mb-2">
-            <Link href="/" className="cursor-pointer">
+            <Link href="/" className="cursor-pointer relative w-[240px] h-[180px] md:w-[320px] md:h-[240px] block">
               <Image
                 src="/images/hay-20cropper.png"
                 alt="HayCropper Marketplace"
-                width={360}
-                height={270}
-                className="object-contain w-[240px] md:w-[320px]"
-                loading="eager"
+                fill
+                className="object-contain"
                 priority
+                sizes="(min-width: 768px) 320px, 240px"
               />
             </Link>
           </div>
