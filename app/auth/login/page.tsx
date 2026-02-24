@@ -47,14 +47,12 @@ export default function LoginPage() {
       <div className="w-full max-w-sm my-auto">
         <div className="flex flex-col">
           <div className="flex flex-col items-center gap-1 text-center mb-2">
-            <Link href="/" className="cursor-pointer block">
+            <Link href="/" className="cursor-pointer block w-[240px] md:w-[320px] aspect-[3/2]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/images/hay-20cropper.png"
                 alt="HayCropper Marketplace"
-                width={240}
-                height={180}
-                className="object-contain w-[240px] md:w-[320px] h-auto"
+                className="w-full h-full object-contain"
                 fetchPriority="high"
                 decoding="sync"
               />
