@@ -39,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans antialiased pb-14 md:pb-0`}>
+      <body className={`font-sans antialiased pb-14 md:pb-0`} suppressHydrationWarning>
         {children}
         <MobileBottomNav />
         <Analytics />
