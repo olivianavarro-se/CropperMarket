@@ -120,10 +120,32 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <CardTitle className="text-xl">Business Profile</CardTitle>
+            <div className="shrink-0">
+              {!isEditing ? (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleCancel} disabled={isLoading}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={isLoading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             {supplier.logo_url && (
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 shrink-0">
+              <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 shrink-0">
                 <img
                   src={supplier.logo_url || "/placeholder.svg"}
                   alt={`${supplier.business_name} logo`}
@@ -131,9 +153,8 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                 />
               </div>
             )}
-            <div className="flex-1">
-              <CardTitle className="text-xl">Business Profile</CardTitle>
-              <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-lg font-semibold text-primary">{supplier.business_name}</h3>
                 <Badge 
                   variant="outline"
@@ -147,25 +168,6 @@ export function SupplierProfile({ supplier, userId }: SupplierProfileProps) {
                 </Badge>
               </div>
             </div>
-          </div>
-          <div>
-            {!isEditing ? (
-              <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleCancel} disabled={isLoading}>
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSave} disabled={isLoading}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save
-                </Button>
-              </div>
-            )}
           </div>
         </div>
       </CardHeader>

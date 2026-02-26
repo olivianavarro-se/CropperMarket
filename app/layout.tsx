@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { MobileBottomNav } from "@/components/mobile-bottom-nav"
+import { InactivityWarning } from "@/components/inactivity-warning"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -42,6 +43,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased pb-14 md:pb-0`}>
         {children}
         <MobileBottomNav />
+        <InactivityWarning />
         <Analytics />
       </body>
     </html>
