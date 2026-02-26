@@ -14,6 +14,13 @@ import { useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 
+const passwordRequirements = [
+  { label: "Lowercase letter (a-z)", test: (p: string) => /[a-z]/.test(p) },
+  { label: "Uppercase letter (A-Z)", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "Number (0-9)", test: (p: string) => /[0-9]/.test(p) },
+  { label: "Special character (!@#$...)", test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};\\':"\\|<>?,./`~]/.test(p) },
+]
+
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -24,13 +31,22 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showRepeatPassword, setShowRepeatPassword] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const router = useRouter()
+
+  const passwordMeetsAll = passwordRequirements.every(({ test }) => test(password))
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
+
+    if (!passwordMeetsAll) {
+      setError("Please make sure your password meets all requirements.")
+      setIsLoading(false)
+      return
+    }
 
     if (password !== repeatPassword) {
       setError("Passwords do not match")
@@ -56,10 +72,8 @@ export default function SignUpPage() {
       if (error instanceof Error) {
         if (error.message.includes("User already registered") || error.message.includes("already registered")) {
           setError("This email is already registered. Please use a different email or try logging in.")
-        } else if (error.message.includes("Password should be at least 6 characters")) {
-          setError(
-            "Password must be at least 6 characters and include uppercase, lowercase, numbers, and special characters.",
-          )
+        } else if (error.message.toLowerCase().includes("password")) {
+          setError("Password does not meet the requirements. Please check the checklist below the password field.")
         } else {
           setError(error.message)
         }
@@ -151,6 +165,8 @@ export default function SignUpPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        onFocus={() => setPasswordFocused(true)}
+                        onBlur={() => setPasswordFocused(false)}
                         className="pr-10 border-[#D4AF8E] h-9"
                       />
                       <button
@@ -161,6 +177,21 @@ export default function SignUpPage() {
                         {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                       </button>
                     </div>
+                    {(passwordFocused || password.length > 0) && (
+                      <div className="mt-1 rounded-md border border-[#E8D5B8] bg-[#FAF8F5] px-3 py-2 flex flex-col gap-1">
+                        {passwordRequirements.map(({ label, test }) => {
+                          const met = test(password)
+                          return (
+                            <div key={label} className="flex items-center gap-1.5">
+                              <span className={`text-xs font-bold leading-none ${met ? "text-green-600" : "text-red-400"}`}>
+                                {met ? "✓" : "✗"}
+                              </span>
+                              <span className={`text-xs ${met ? "text-green-700" : "text-[#8A6842]"}`}>{label}</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div className="grid gap-1">
                     <Label htmlFor="repeat-password" className="text-[#65411C] text-sm">
