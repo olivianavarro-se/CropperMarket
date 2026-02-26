@@ -14,8 +14,8 @@ export default function SignUpSuccessPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button asChild className="w-full bg-[#F0B349] hover:bg-[#FCE2A4] text-[#65411C] font-bold">
-              <a href="https://v0-hay-market-platform.vercel.app/">Go to HayCropper</a>
+            <Button asChild className="w-full">
+              <Link href="/auth/login">Back to Login</Link>
             </Button>
           </CardContent>
         </Card>

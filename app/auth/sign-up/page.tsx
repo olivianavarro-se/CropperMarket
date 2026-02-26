@@ -59,7 +59,7 @@ export default function SignUpPage() {
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin,
+          emailRedirectTo: "https://v0-hay-market-platform.vercel.app/",
           data: {
             full_name: fullName,
             account_type: accountType,
