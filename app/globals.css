@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* HayCropper Marketplace - Warm hay/golden color scheme */
+/* HayResource Marketplace - Warm hay/golden color scheme */
 :root {
   /* New HayCropper color palette based on provided brand colors */
   --background: oklch(0.98 0.01 85);
@@ -46,7 +46,7 @@
   --sidebar-border: oklch(0.88 0.03 75);
   --sidebar-ring: oklch(0.7 0.1 70);
 
-  /* Custom HayCropper brand colors */
+  /* Custom HayResource brand colors */
   --hay-glow: #fce2a4;
   --hay-gold: #f0b349;
   --hay-dark-brown: #65411c;
@@ -131,7 +131,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* HayCropper brand colors as Tailwind tokens */
+  /* HayResource brand colors as Tailwind tokens */
   --color-hay-glow: #fce2a4;
   --color-hay-gold: #f0b349;
   --color-hay-dark: #65411c;

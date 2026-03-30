@@ -134,13 +134,13 @@ export function Header() {
         <Link href="/" className="flex items-center gap-1.5 md:gap-2 hover:opacity-80 transition-opacity">
           <Image
             src="/images/hay-20cropper-20logo.png"
-            alt="HayCropper Logo"
+            alt="HayResource Logo"
             width={64}
             height={64}
             className="object-contain w-10 h-10 md:w-16 md:h-16"
           />
           <div className="flex flex-col">
-            <h1 className="text-base md:text-xl font-bold text-hay-dark tracking-wide">HAYCROPPER</h1>
+            <h1 className="text-base md:text-xl font-bold text-hay-dark tracking-wide">HAYRESOURCE</h1>
             <span className="text-[8px] md:text-[10px] text-hay-medium tracking-widest -mt-0.5 md:-mt-1">MARKETPLACE</span>
           </div>
         </Link>

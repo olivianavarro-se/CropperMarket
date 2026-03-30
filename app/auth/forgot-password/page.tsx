@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
             <Link href="/" className="cursor-pointer">
               <Image
                 src="/images/hay-20cropper.png"
-                alt="HayCropper Marketplace"
+                alt="HayResource Marketplace"
                 width={360}
                 height={270}
                 className="object-contain w-[240px] md:w-[320px]"

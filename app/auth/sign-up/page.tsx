@@ -94,7 +94,7 @@ export default function SignUpPage() {
             <Link href="/" className="cursor-pointer">
               <Image
                 src="/images/hay-20cropper.png"
-                alt="HayCropper Marketplace"
+                alt="HayResource Marketplace"
                 width={360}
                 height={270}
                 className="object-contain w-[240px] md:w-[320px]"
@@ -104,7 +104,7 @@ export default function SignUpPage() {
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
             <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
               <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Create Account</CardTitle>
-              <CardDescription className="text-[#8A6842] text-sm">Join the HayCropper marketplace</CardDescription>
+              <CardDescription className="text-[#8A6842] text-sm">Join the HayResource marketplace</CardDescription>
             </CardHeader>
             <CardContent className="pt-2 pb-3 px-4">
               <form onSubmit={handleSignUp}>
