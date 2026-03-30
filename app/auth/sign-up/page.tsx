@@ -93,11 +93,11 @@ export default function SignUpPage() {
           <div className="flex flex-col items-center gap-1 text-center mb-2">
             <Link href="/" className="cursor-pointer">
               <Image
-                src="/images/hay-20cropper.png"
+                src="/images/hayresource-logo.png"
                 alt="HayResource Marketplace"
                 width={360}
                 height={270}
-                className="object-contain w-[240px] md:w-[320px]"
+                className="object-contain w-[180px] md:w-[240px]"
               />
             </Link>
           </div>
