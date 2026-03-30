@@ -32,9 +32,9 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: "profile", label: "Business Profile", icon: Building2 },
+  { id: "orders", label: "Orders", icon: ShoppingCart },
   { id: "locations", label: "Locations & Inventory", icon: MapPin },
   { id: "calendar", label: "Calendar", icon: Calendar },
-  { id: "orders", label: "Orders", icon: ShoppingCart },
 ]
 
 export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProps) {

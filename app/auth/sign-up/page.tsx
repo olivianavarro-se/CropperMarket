@@ -90,21 +90,23 @@ export default function SignUpPage() {
     <div className="fixed inset-0 flex w-full items-center justify-center p-4 md:p-6 bg-[#FAF8F5] overflow-y-auto z-50">
       <div className="w-full max-w-sm">
         <div className="flex flex-col">
-          <div className="flex flex-col items-center gap-1 text-center mb-2">
-            <Link href="/" className="cursor-pointer">
+          <div className="flex flex-col items-center gap-1 text-center mb-4">
+            <Link href="/" className="cursor-pointer flex flex-col items-center">
               <Image
-                src="/images/hay-20cropper.png"
-                alt="HayCropper Marketplace"
-                width={360}
-                height={270}
-                className="object-contain w-[240px] md:w-[320px]"
+                src="/images/hayresource-logo.png"
+                alt="HayResource Marketplace"
+                width={540}
+                height={405}
+                className="object-contain w-[270px] md:w-[360px]"
               />
+              <h1 className="text-2xl md:text-3xl font-bold text-hay-dark tracking-wide mt-2">HAYRESOURCE</h1>
+              <span className="text-xs md:text-sm text-hay-medium tracking-widest -mt-1">MARKETPLACE</span>
             </Link>
           </div>
           <Card className="border-2 border-[#F0B349] bg-white shadow-xl">
             <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
               <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Create Account</CardTitle>
-              <CardDescription className="text-[#8A6842] text-sm">Join the HayCropper marketplace</CardDescription>
+              <CardDescription className="text-[#8A6842] text-sm">Join the HayResource marketplace</CardDescription>
             </CardHeader>
             <CardContent className="pt-2 pb-3 px-4">
               <form onSubmit={handleSignUp}>
