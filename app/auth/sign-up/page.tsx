@@ -60,7 +60,7 @@ export default function SignUpPage() {
         email,
         password,
         options: {
-          emailRedirectTo: "https://v0-hay-market-platform.vercel.app/",
+          emailRedirectTo: "https://www.hayresource.com/",
           data: {
             full_name: fullName,
             account_type: accountType,
