@@ -13,7 +13,6 @@ interface MapViewProps {
   selectedLocation?: LocationWithSupplier | null
   onLocationSelect?: (location: LocationWithSupplier | null) => void
   activeFilters?: any // Added activeFilters prop to pass to cards and for auto-zoom
-  leftPanelOpen?: boolean // Whether the filters panel on the left is visible
 }
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
@@ -27,7 +26,6 @@ export function MapView({
   selectedLocation,
   onLocationSelect,
   activeFilters,
-  leftPanelOpen = false,
 }: MapViewProps) {
   const [map, setMap] = useState<any | null>(null)
   const [markers, setMarkers] = useState<any[]>([])
@@ -267,34 +265,6 @@ export function MapView({
     }
   }, [locations, mapsApiKey, mapId, userLocation, onLocationSelect])
 
-  // Helper function to center on location with panel offset
-  const centerOnLocationWithOffset = (lat: number, lng: number) => {
-    if (!map) return
-    
-    const isDesktop = window.innerWidth >= 768
-    const isLargeDesktop = window.innerWidth >= 1024
-    
-    // First, center on the location and set zoom
-    map.setCenter({ lat, lng })
-    map.setZoom(13)
-    
-    if (isDesktop) {
-      // Right panel (location popup): 380px on md, 420px on lg, plus margin
-      const rightPanelWidth = isLargeDesktop ? 420 : 380
-      const rightPadding = 32 // right-4 margin + some buffer
-      
-      // panBy(x, y): positive x moves map right (marker appears left), negative x moves map left
-      // Since popup is on the RIGHT, we want marker to appear more to the LEFT
-      // So we pan the map to the RIGHT (positive x), which shifts the view so marker is left of center
-      const offsetX = (rightPanelWidth + rightPadding) / 2
-      
-      // Wait for center/zoom to apply, then pan by offset
-      setTimeout(() => {
-        map.panBy(offsetX, 0)
-      }, 50)
-    }
-  }
-
   useEffect(() => {
     if (!map || !mapsLoaded || !selectedLocation) return
 
@@ -303,24 +273,10 @@ export function MapView({
 
     if (lat && lng) {
       hasUserInteracted.current = true
-      centerOnLocationWithOffset(lat, lng)
+      map.panTo({ lat, lng })
+      map.setZoom(13)
     }
   }, [selectedLocation, map, mapsLoaded])
-
-  // Re-center when left panel toggles (if a location is selected)
-  useEffect(() => {
-    if (!map || !mapsLoaded || !selectedLocation) return
-    
-    const lat = Number(selectedLocation.latitude)
-    const lng = Number(selectedLocation.longitude)
-    
-    if (lat && lng) {
-      // Small delay to let the CSS transition complete
-      setTimeout(() => {
-        centerOnLocationWithOffset(lat, lng)
-      }, 250)
-    }
-  }, [leftPanelOpen])
 
   useEffect(() => {
     if (!map || !mapsLoaded || locations.length === 0) return

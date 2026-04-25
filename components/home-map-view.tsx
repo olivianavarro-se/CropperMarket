@@ -518,7 +518,6 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
           selectedLocation={selectedLocation}
           onLocationSelect={setSelectedLocation}
           activeFilters={filters}
-          leftPanelOpen={desktopShowFilters}
         />
       </div>
 
