@@ -273,8 +273,64 @@ export function MapView({
 
     if (lat && lng) {
       hasUserInteracted.current = true
-      map.panTo({ lat, lng })
-      map.setZoom(13)
+      
+      // Get the map container dimensions
+      const mapDiv = document.getElementById("map")
+      if (!mapDiv) {
+        map.panTo({ lat, lng })
+        map.setZoom(13)
+        return
+      }
+
+      const mapWidth = mapDiv.offsetWidth
+      
+      // Calculate the popup panel width based on screen size
+      // On md screens: 380px, on lg screens: 420px, on mobile: full width (no offset needed)
+      const isDesktop = window.innerWidth >= 768 // md breakpoint
+      const isLargeDesktop = window.innerWidth >= 1024 // lg breakpoint
+      
+      if (isDesktop) {
+        const panelWidth = isLargeDesktop ? 420 : 380
+        const padding = 16 // account for the right-4 (16px) margin
+        
+        // Calculate how much to offset the center to the left
+        // We want the marker centered in the visible area (map width minus panel)
+        const visibleWidth = mapWidth - panelWidth - padding
+        const offsetPixels = (panelWidth + padding) / 2
+        
+        // Set zoom first so we can calculate the correct offset
+        map.setZoom(13)
+        
+        // Wait for zoom to apply, then calculate and apply offset
+        setTimeout(() => {
+          const projection = map.getProjection()
+          if (projection) {
+            const center = new window.google.maps.LatLng(lat, lng)
+            const worldCoordinate = projection.fromLatLngToPoint(center)
+            
+            if (worldCoordinate) {
+              // Calculate the offset in world coordinates
+              const scale = Math.pow(2, map.getZoom() || 13)
+              const offsetWorld = offsetPixels / scale
+              
+              // Create new center point shifted to the left
+              const newWorldCoordinate = new window.google.maps.Point(
+                worldCoordinate.x - offsetWorld,
+                worldCoordinate.y
+              )
+              
+              const newCenter = projection.fromPointToLatLng(newWorldCoordinate)
+              if (newCenter) {
+                map.panTo(newCenter)
+              }
+            }
+          }
+        }, 100)
+      } else {
+        // On mobile, just center normally (popup is at bottom or covers full width)
+        map.panTo({ lat, lng })
+        map.setZoom(13)
+      }
     }
   }, [selectedLocation, map, mapsLoaded])
 
