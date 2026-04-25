@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, SlidersHorizontal, X, ChevronUp, ChevronDown, List } from "lucide-react"
+import { Search, SlidersHorizontal, X, ChevronUp, ChevronDown, List, PanelLeftClose, PanelLeft } from "lucide-react"
 import { HAY_TYPES } from "@/lib/hay-types"
 import { useUserLocation } from "@/hooks/use-user-location"
 import type { LocationWithSupplier } from "@/lib/types"
@@ -40,6 +40,8 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   // Mobile-only state
   const [mobileShowFilters, setMobileShowFilters] = useState(false)
   const [mobileShowListings, setMobileShowListings] = useState(false)
+  // Desktop filter panel visibility (collapsed by default for more map space)
+  const [desktopShowFilters, setDesktopShowFilters] = useState(false)
   const [filters, setFilters] = useState<FilterOptions>({
     type: "all",
     hasInventory: false,
@@ -506,7 +508,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       </div>
 
       {/* ===== SINGLE SHARED MAP (fills remaining space on mobile, offset on desktop) ===== */}
-      <div className="relative flex-1 md:absolute md:inset-0 md:left-[770px] md:top-[57px] flex flex-col">
+      <div className={`relative flex-1 md:absolute md:inset-0 md:top-[57px] flex flex-col transition-all duration-200 ${desktopShowFilters ? 'md:left-[668px]' : 'md:left-[380px]'}`}
         <MapView
           locations={filteredLocations}
           isAuthenticated={isAuthenticated}
@@ -591,34 +593,66 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       )}
 
       {/* ==================== DESKTOP PANELS (>= md) ==================== */}
-      {/* Filter sidebar */}
-      <div className="hidden md:flex absolute left-0 top-0 bottom-0 w-80 border-r border-hay-border bg-card flex-col overflow-hidden z-10">
-        <div className="p-4 border-b border-hay-border flex-shrink-0">
-          <h3 className="font-semibold text-lg">Filters</h3>
-          {activeFilterCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
-            </p>
-          )}
-        </div>
-        {renderFilterContent()}
-        {renderClearButton()}
-      </div>
-
-      {/* Listings panel */}
-      <div className="hidden md:flex absolute left-80 top-0 bottom-0 w-[450px] border-r border-hay-border bg-card flex-col overflow-hidden shadow-lg z-10">
-        <div className="p-6 border-b bg-white/80 backdrop-blur-sm flex-shrink-0 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
-          </h2>
-          <div className="flex gap-3 mt-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-grower-bg rounded-full border border-grower-border">
-              <div className="w-2.5 h-2.5 rounded-full bg-grower shadow-sm"></div>
-              <span className="text-xs font-semibold text-foreground">Grower</span>
+      {/* Filter sidebar - collapsible */}
+      {desktopShowFilters && (
+        <div className="hidden md:flex absolute left-0 top-0 bottom-0 w-72 border-r border-hay-border bg-card flex-col overflow-hidden z-10">
+          <div className="p-4 border-b border-hay-border flex-shrink-0 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg">Filters</h3>
+              {activeFilterCount > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied
+                </p>
+              )}
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-broker-bg rounded-full border border-broker-border">
-              <div className="w-2.5 h-2.5 rounded-full bg-broker shadow-sm"></div>
-              <span className="text-xs font-semibold text-foreground">Broker</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDesktopShowFilters(false)}
+              className="h-8 w-8"
+              title="Hide filters"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </div>
+          {renderFilterContent()}
+          {renderClearButton()}
+        </div>
+      )}
+
+      {/* Listings panel - position depends on filter visibility */}
+      <div className={`hidden md:flex absolute top-0 bottom-0 w-[380px] border-r border-hay-border bg-card flex-col overflow-hidden shadow-lg z-10 transition-all duration-200 ${desktopShowFilters ? 'left-72' : 'left-0'}`}>
+        <div className="p-4 border-b bg-white/80 backdrop-blur-sm flex-shrink-0 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            {!desktopShowFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDesktopShowFilters(true)}
+                className="h-8 gap-1.5"
+                title="Show filters"
+              >
+                <PanelLeft className="h-4 w-4" />
+                <span className="text-xs">Filters</span>
+                {activeFilterCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-hay-gold text-white rounded-full">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            )}
+            <h2 className="text-lg font-bold text-gray-900">
+              {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
+            </h2>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-grower-bg rounded-full border border-grower-border">
+              <div className="w-2 h-2 rounded-full bg-grower shadow-sm"></div>
+              <span className="text-[10px] font-semibold text-foreground">Grower</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-broker-bg rounded-full border border-broker-border">
+              <div className="w-2 h-2 rounded-full bg-broker shadow-sm"></div>
+              <span className="text-[10px] font-semibold text-foreground">Broker</span>
             </div>
           </div>
         </div>
@@ -626,7 +660,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       </div>
 
       {/* Desktop search bar above map */}
-      <div className="hidden md:block absolute left-[770px] top-0 right-0 z-10">
+      <div className={`hidden md:block absolute top-0 right-0 z-10 transition-all duration-200 ${desktopShowFilters ? 'left-[668px]' : 'left-[380px]'}`}
         <div className="p-4 bg-card border-b border-hay-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
