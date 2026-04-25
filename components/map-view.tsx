@@ -313,9 +313,9 @@ export function MapView({
               const scale = Math.pow(2, map.getZoom() || 13)
               const offsetWorld = offsetPixels / scale
               
-              // Create new center point shifted to the left
+              // Shift map center to the RIGHT so the marker appears centered in the visible area (left of the panel)
               const newWorldCoordinate = new window.google.maps.Point(
-                worldCoordinate.x - offsetWorld,
+                worldCoordinate.x + offsetWorld,
                 worldCoordinate.y
               )
               
