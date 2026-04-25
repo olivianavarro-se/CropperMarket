@@ -271,13 +271,10 @@ export function MapView({
     const lat = Number(selectedLocation.latitude)
     const lng = Number(selectedLocation.longitude)
 
-    console.log("[v0] Selected location changed:", selectedLocation.name, { lat, lng })
-
     if (lat && lng) {
       hasUserInteracted.current = true
       map.panTo({ lat, lng })
       map.setZoom(13)
-      console.log("[v0] Map panned to selected location")
     }
   }, [selectedLocation, map, mapsLoaded])
 
