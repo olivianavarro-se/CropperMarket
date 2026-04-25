@@ -267,6 +267,34 @@ export function MapView({
     }
   }, [locations, mapsApiKey, mapId, userLocation, onLocationSelect])
 
+  // Helper function to center on location with panel offset
+  const centerOnLocationWithOffset = (lat: number, lng: number) => {
+    if (!map) return
+    
+    const isDesktop = window.innerWidth >= 768
+    const isLargeDesktop = window.innerWidth >= 1024
+    
+    // First, center on the location and set zoom
+    map.setCenter({ lat, lng })
+    map.setZoom(13)
+    
+    if (isDesktop) {
+      // Right panel (location popup): 380px on md, 420px on lg, plus margin
+      const rightPanelWidth = isLargeDesktop ? 420 : 380
+      const rightPadding = 32 // right-4 margin + some buffer
+      
+      // panBy(x, y): positive x moves map right (marker appears left), negative x moves map left
+      // Since popup is on the RIGHT, we want marker to appear more to the LEFT
+      // So we pan the map to the RIGHT (positive x), which shifts the view so marker is left of center
+      const offsetX = (rightPanelWidth + rightPadding) / 2
+      
+      // Wait for center/zoom to apply, then pan by offset
+      setTimeout(() => {
+        map.panBy(offsetX, 0)
+      }, 50)
+    }
+  }
+
   useEffect(() => {
     if (!map || !mapsLoaded || !selectedLocation) return
 
@@ -275,54 +303,24 @@ export function MapView({
 
     if (lat && lng) {
       hasUserInteracted.current = true
-      
-      const isDesktop = window.innerWidth >= 768 // md breakpoint
-      const isLargeDesktop = window.innerWidth >= 1024 // lg breakpoint
-      
-      if (isDesktop) {
-        // Right panel (location popup): 380px on md, 420px on lg
-        const rightPanelWidth = isLargeDesktop ? 420 : 380
-        const rightPadding = 16 // right-4 margin
-        
-        // Calculate net offset: positive = shift right, negative = shift left
-        // Right panel pushes visible area left, so we need to shift center LEFT (negative offset in pixels)
-        const rightOffset = -(rightPanelWidth + rightPadding) / 2
-        
-        const netOffsetPixels = rightOffset
-        
-        // Set zoom first
-        map.setZoom(13)
-        
-        // Wait for zoom to apply, then calculate and apply offset
-        setTimeout(() => {
-          const projection = map.getProjection()
-          if (projection) {
-            const center = new window.google.maps.LatLng(lat, lng)
-            const worldCoordinate = projection.fromLatLngToPoint(center)
-            
-            if (worldCoordinate) {
-              const scale = Math.pow(2, map.getZoom() || 13)
-              const offsetWorld = netOffsetPixels / scale
-              
-              const newWorldCoordinate = new window.google.maps.Point(
-                worldCoordinate.x + offsetWorld,
-                worldCoordinate.y
-              )
-              
-              const newCenter = projection.fromPointToLatLng(newWorldCoordinate)
-              if (newCenter) {
-                map.panTo(newCenter)
-              }
-            }
-          }
-        }, 100)
-      } else {
-        // On mobile, just center normally
-        map.panTo({ lat, lng })
-        map.setZoom(13)
-      }
+      centerOnLocationWithOffset(lat, lng)
     }
-  }, [selectedLocation, map, mapsLoaded, leftPanelOpen])
+  }, [selectedLocation, map, mapsLoaded])
+
+  // Re-center when left panel toggles (if a location is selected)
+  useEffect(() => {
+    if (!map || !mapsLoaded || !selectedLocation) return
+    
+    const lat = Number(selectedLocation.latitude)
+    const lng = Number(selectedLocation.longitude)
+    
+    if (lat && lng) {
+      // Small delay to let the CSS transition complete
+      setTimeout(() => {
+        centerOnLocationWithOffset(lat, lng)
+      }, 250)
+    }
+  }, [leftPanelOpen])
 
   useEffect(() => {
     if (!map || !mapsLoaded || locations.length === 0) return
