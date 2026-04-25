@@ -508,7 +508,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       </div>
 
       {/* ===== SINGLE SHARED MAP (fills remaining space on mobile, offset on desktop) ===== */}
-      <div className={`relative flex-1 md:absolute md:inset-0 md:top-[57px] flex flex-col transition-all duration-200 ${desktopShowFilters ? 'md:left-[668px]' : 'md:left-[380px]'}`}
+      <div className={`relative flex-1 md:absolute md:inset-0 md:top-[57px] flex flex-col transition-all duration-200 ${desktopShowFilters ? 'md:left-[668px]' : 'md:left-[380px]'}`}>
         <MapView
           locations={filteredLocations}
           isAuthenticated={isAuthenticated}
