@@ -660,7 +660,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       </div>
 
       {/* Desktop search bar above map */}
-      <div className={`hidden md:block absolute top-0 right-0 z-10 transition-all duration-200 ${desktopShowFilters ? 'left-[668px]' : 'left-[380px]'}`}
+      <div className={`hidden md:block absolute top-0 right-0 z-10 transition-all duration-200 ${desktopShowFilters ? 'left-[668px]' : 'left-[380px]'}`}>
         <div className="p-4 bg-card border-b border-hay-border">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
