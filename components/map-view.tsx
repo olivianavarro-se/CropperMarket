@@ -17,6 +17,11 @@ interface MapViewProps {
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
 
+function removeMarker(marker: any) {
+  if (typeof marker.setMap === "function") marker.setMap(null)
+  else marker.map = null
+}
+
 export function MapView({
   locations,
   isAuthenticated = false,
@@ -28,13 +33,12 @@ export function MapView({
   activeFilters,
 }: MapViewProps) {
   const [map, setMap] = useState<any | null>(null)
-  const [markers, setMarkers] = useState<any[]>([])
   const [mapsLoaded, setMapsLoaded] = useState(false)
   const [mapsError, setMapsError] = useState<string | null>(null)
-  const [useAdvancedMarkers, setUseAdvancedMarkers] = useState(false)
+  const markersRef = useRef<Map<string, any>>(new Map())
+  const onLocationSelectRef = useRef(onLocationSelect)
   const hasUserInteracted = useRef(false)
   const prevUserLocation = useRef<{ lat: number; lng: number } | null>(null)
-  const initialMapSet = useRef(false)
   const prevFiltersActive = useRef(false)
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined
@@ -65,7 +69,84 @@ export function MapView({
   }, [map, mapsLoaded, userLocation])
 
   useEffect(() => {
-    if (!mapsApiKey || locations.length === 0) return
+    onLocationSelectRef.current = onLocationSelect
+  }, [onLocationSelect])
+
+  useEffect(() => {
+    if (!map || !mapsLoaded) return
+
+    const visibleIds = new Set<string>()
+
+    locations.forEach((location) => {
+      const hasLatLng = !!(location.latitude && location.longitude)
+      const hasInventory = location.inventory && location.inventory.length > 0
+      if (!hasLatLng || !hasInventory) return
+
+      const id = String(location.id)
+      visibleIds.add(id)
+      if (markersRef.current.has(id)) return
+
+      const position = { lat: Number(location.latitude), lng: Number(location.longitude) }
+      const color = location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a"
+      const title = `${location.supplier.business_name} - ${location.name}`
+      const handleClick = () => {
+        hasUserInteracted.current = true
+        onLocationSelectRef.current?.(location)
+        map.panTo(position)
+        map.setZoom(13)
+      }
+
+      const AdvancedMarkerElement = mapId ? (window.google.maps as any).marker?.AdvancedMarkerElement : null
+      let marker: any
+
+      if (AdvancedMarkerElement) {
+        const pinElement = document.createElement("div")
+        pinElement.style.width = "20px"
+        pinElement.style.height = "20px"
+        pinElement.style.borderRadius = "50%"
+        pinElement.style.backgroundColor = color
+        pinElement.style.border = "3px solid #ffffff"
+        pinElement.style.cursor = "pointer"
+
+        marker = new AdvancedMarkerElement({ map, position, title, content: pinElement })
+        pinElement.addEventListener("click", handleClick)
+      } else {
+        marker = new window.google.maps.Marker({
+          map,
+          position,
+          title,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            fillColor: color,
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 3,
+            scale: 10,
+          },
+        })
+        marker.addListener("click", handleClick)
+      }
+
+      markersRef.current.set(id, marker)
+    })
+
+    markersRef.current.forEach((marker, id) => {
+      if (visibleIds.has(id)) return
+      removeMarker(marker)
+      markersRef.current.delete(id)
+    })
+  }, [map, mapsLoaded, locations, mapId])
+
+  useEffect(() => {
+    const markers = markersRef.current
+    return () => {
+      markers.forEach(removeMarker)
+      markers.clear()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!mapsApiKey) return
 
     let isComponentMounted = true
     let retryCount = 0
@@ -137,76 +218,6 @@ export function MapView({
         
         setMapsLoaded(true)
         setMap(mapInstance)
-
-        const locationsWithCoords = locations.filter((location) => {
-          const hasLatLng = !!(location.latitude && location.longitude)
-          const hasInventory = location.inventory && location.inventory.length > 0
-          return hasLatLng && hasInventory
-        })
-
-        const AdvancedMarkerElement = mapId ? (window.google.maps as any).marker?.AdvancedMarkerElement : null
-        const hasAdvancedMarkers = !!AdvancedMarkerElement
-
-        if (hasAdvancedMarkers) {
-          setUseAdvancedMarkers(true)
-        } else {
-          setUseAdvancedMarkers(false)
-        }
-
-        const newMarkers = locationsWithCoords.map((location) => {
-          const position = { lat: Number(location.latitude), lng: Number(location.longitude) }
-
-          let marker: any
-
-          if (hasAdvancedMarkers) {
-            const pinElement = document.createElement("div")
-            pinElement.style.width = "20px"
-            pinElement.style.height = "20px"
-            pinElement.style.borderRadius = "50%"
-            pinElement.style.backgroundColor = location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a"
-            pinElement.style.border = "3px solid #ffffff"
-            pinElement.style.cursor = "pointer"
-
-            marker = new AdvancedMarkerElement({
-              map: mapInstance,
-              position,
-              title: `${location.supplier.business_name} - ${location.name}`,
-              content: pinElement,
-            })
-
-            pinElement.addEventListener("click", () => {
-              hasUserInteracted.current = true
-              onLocationSelect?.(location)
-              mapInstance.panTo(position)
-              mapInstance.setZoom(13)
-            })
-          } else {
-            marker = new window.google.maps.Marker({
-              map: mapInstance,
-              position,
-              title: `${location.supplier.business_name} - ${location.name}`,
-              icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                fillColor: location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 3,
-                scale: 10,
-              },
-            })
-
-            marker.addListener("click", () => {
-              hasUserInteracted.current = true
-              onLocationSelect?.(location)
-              mapInstance.panTo(position)
-              mapInstance.setZoom(13)
-            })
-          }
-
-          return marker
-        })
-
-        setMarkers(newMarkers)
       } catch (error) {
         if (isComponentMounted) {
           console.error("Maps initialization error:", error)
@@ -259,11 +270,8 @@ export function MapView({
 
     return () => {
       isComponentMounted = false
-      markers.forEach((marker) => {
-        if (marker.map) marker.map = null
-      })
     }
-  }, [locations, mapsApiKey, mapId, userLocation, onLocationSelect])
+  }, [mapsApiKey, mapId])
 
   useEffect(() => {
     if (!map || !mapsLoaded || !selectedLocation) return
