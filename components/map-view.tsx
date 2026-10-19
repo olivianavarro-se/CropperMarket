@@ -61,8 +61,12 @@ export function MapView({
       prevUserLocation.current.lng !== userLocation.lng
 
     if (isNewLocation) {
-      map.panTo(userLocation)
-      map.setZoom(10)
+      try {
+        map.panTo(userLocation)
+        map.setZoom(10)
+      } catch (error) {
+        console.error("Map pan error:", error)
+      }
       prevUserLocation.current = userLocation
       console.log("[Location] Map panned to user location:", userLocation)
     }
@@ -77,6 +81,8 @@ export function MapView({
 
     const visibleIds = new Set<string>()
 
+    // Google Maps can throw (e.g. when the key rejects the site's address); keep the rest of the page alive.
+    try {
     locations.forEach((location) => {
       const hasLatLng = !!(location.latitude && location.longitude)
       const hasInventory = location.inventory && location.inventory.length > 0
@@ -135,18 +141,30 @@ export function MapView({
       removeMarker(marker)
       markersRef.current.delete(id)
     })
+    } catch (error) {
+      console.error("Map markers error:", error)
+    }
   }, [map, mapsLoaded, locations, mapId])
 
   useEffect(() => {
     const markers = markersRef.current
     return () => {
-      markers.forEach(removeMarker)
+      markers.forEach((marker) => {
+        try {
+          removeMarker(marker)
+        } catch {}
+      })
       markers.clear()
     }
   }, [])
 
   useEffect(() => {
     if (!mapsApiKey) return
+
+    // Google calls this global when the API key rejects the current site address.
+    ;(window as any).gm_authFailure = () => {
+      setMapsError("Google Maps rejected this site address")
+    }
 
     let isComponentMounted = true
     let retryCount = 0
@@ -281,8 +299,12 @@ export function MapView({
 
     if (lat && lng) {
       hasUserInteracted.current = true
-      map.panTo({ lat, lng })
-      map.setZoom(13)
+      try {
+        map.panTo({ lat, lng })
+        map.setZoom(13)
+      } catch (error) {
+        console.error("Map pan error:", error)
+      }
     }
   }, [selectedLocation, map, mapsLoaded])
 
@@ -306,7 +328,8 @@ export function MapView({
 
     // Check if filters were just cleared (went from active to inactive)
     const filtersJustCleared = prevFiltersActive.current && !hasActiveFilters
-    
+
+    try {
     if (filtersJustCleared) {
       hasUserInteracted.current = false // Reset interaction flag
       
@@ -345,7 +368,10 @@ export function MapView({
         })
       }
     }
-    
+    } catch (error) {
+      console.error("Map zoom error:", error)
+    }
+
     // Update previous filter state for next comparison
     prevFiltersActive.current = hasActiveFilters
   }, [map, mapsLoaded, locations, activeFilters])
@@ -356,7 +382,7 @@ export function MapView({
         <div className="text-center p-8">
           <div className="text-6xl mb-4">🗺️</div>
           <h3 className="text-xl font-semibold text-gray-700 mb-2">Map Configuration Needed</h3>
-          <p className="text-gray-600 mb-4">Google Maps API is not available</p>
+          <p className="text-gray-600 mb-4">{mapsError ?? "Google Maps API is not available"}</p>
           {mapsError && (
             <div className="mt-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left max-w-md mx-auto">
               <p className="text-sm text-yellow-900 font-semibold mb-2">⚠️ Configuration Required</p>
