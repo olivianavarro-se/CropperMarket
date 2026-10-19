@@ -1,7 +1,7 @@
 export type AccountType = "grower" | "broker" | "buyer"
 export type SupplierType = "broker" | "grower"
-export type StockUnit = "tons" | "large_bales" | "small_bales"
-export type SellingUnit = "tons" | "large_bales" | "small_bales"
+export type StockUnit = "tons" | "large_bales" | "small_bales" | "round_bales" | "bundles"
+export type SellingUnit = "tons" | "large_bales" | "small_bales" | "round_bales" | "bundles"
 
 export interface PricingOption {
   unit: SellingUnit

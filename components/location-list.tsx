@@ -781,6 +781,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                                           <SelectItem value="tons">Tons</SelectItem>
                                           <SelectItem value="large_bales">Large Bales</SelectItem>
                                           <SelectItem value="small_bales">Small Bales</SelectItem>
+                                          <SelectItem value="round_bales">Round Bales</SelectItem>
+                                          <SelectItem value="bundles">Bundles</SelectItem>
                                         </SelectContent>
                                       </Select>
                                     </div>
@@ -824,6 +826,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                                               <SelectItem value="tons">Ton</SelectItem>
                                               <SelectItem value="large_bales">Large Bale</SelectItem>
                                               <SelectItem value="small_bales">Small Bale</SelectItem>
+                                              <SelectItem value="round_bales">Round Bale</SelectItem>
+                                              <SelectItem value="bundles">Bundle</SelectItem>
                                             </SelectContent>
                                           </Select>
                                         </div>
