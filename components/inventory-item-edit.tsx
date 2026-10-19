@@ -166,6 +166,8 @@ export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
                     <SelectItem value="tons">Tons</SelectItem>
                     <SelectItem value="large_bales">Large Bales</SelectItem>
                     <SelectItem value="small_bales">Small Bales</SelectItem>
+                    <SelectItem value="round_bales">Round Bales</SelectItem>
+                    <SelectItem value="bundles">Bundles</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -209,6 +211,8 @@ export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
                           <SelectItem value="tons">Per Ton</SelectItem>
                           <SelectItem value="large_bales">Per Large Bale</SelectItem>
                           <SelectItem value="small_bales">Per Small Bale</SelectItem>
+                          <SelectItem value="round_bales">Per Round Bale</SelectItem>
+                          <SelectItem value="bundles">Per Bundle</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -3,12 +3,16 @@ export const STOCK_UNIT_LABELS: Record<string, string> = {
   tons: "Tons",
   large_bales: "Large Bales",
   small_bales: "Small Bales",
+  round_bales: "Round Bales",
+  bundles: "Bundles",
 }
 
 export const SELLING_UNIT_LABELS: Record<string, string> = {
   tons: "per Ton",
   large_bales: "per Large Bale",
   small_bales: "per Small Bale",
+  round_bales: "per Round Bale",
+  bundles: "per Bundle",
 }
 
 export function getStockUnitLabel(unit: string): string {

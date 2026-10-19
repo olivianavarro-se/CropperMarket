@@ -293,6 +293,8 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
                 { value: "tons", label: "Tons" },
                 { value: "small_bales", label: "Small Bales" },
                 { value: "large_bales", label: "Large Bales" },
+                { value: "round_bales", label: "Round Bales" },
+                { value: "bundles", label: "Bundles" },
               ].map((unit) => (
                 <div key={unit.value} className="flex items-center space-x-2">
                   <Checkbox

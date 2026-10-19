@@ -248,6 +248,10 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         return "Small Bale"
       case "large_bales":
         return "Large Bale"
+      case "round_bales":
+        return "Round Bale"
+      case "bundles":
+        return "Bundle"
       default:
         return unit
     }
