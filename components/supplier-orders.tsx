@@ -390,6 +390,15 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                       </div>
                     ))}
                   </div>
+                  <div className="mt-3 flex items-center justify-between border-t pt-3">
+                    <span className="font-medium">Order Total</span>
+                    <span className="text-lg font-bold text-green-700 tabular-nums">
+                      $
+                      {order.requested_items
+                        .reduce((sum, item) => sum + item.price_per_unit * item.quantity, 0)
+                        .toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Message */}

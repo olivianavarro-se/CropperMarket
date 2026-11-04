@@ -132,7 +132,17 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
     setNewQuantity("1")
   }
 
-  const total = draft.reduce((sum, item) => sum + item.price_per_unit * (item.quantity || 0), 0)
+  const pendingOption = selectedRow ? selectedOptions[Number(newOptionIndex)] || selectedOptions[0] : undefined
+  const pendingQuantity = Number(newQuantity)
+  const pendingSubtotal =
+    pendingOption && Number.isFinite(pendingQuantity) && pendingQuantity > 0
+      ? Number(pendingOption.price) * pendingQuantity
+      : 0
+  const itemsTotal = draft.reduce(
+    (sum, item) => sum + item.price_per_unit * (Number.isFinite(item.quantity) ? item.quantity : 0),
+    0,
+  )
+  const total = itemsTotal + pendingSubtotal
 
   const save = async () => {
     if (draft.length === 0) {
@@ -197,6 +207,9 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
                 onChange={(e) => updateQuantity(index, e.target.value)}
                 className="w-24"
               />
+              <span className="w-20 text-right text-sm font-semibold tabular-nums">
+                ${(item.price_per_unit * (Number.isFinite(item.quantity) ? item.quantity : 0)).toFixed(2)}
+              </span>
               <Button
                 type="button"
                 variant="ghost"
@@ -275,9 +288,17 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
           )}
         </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">New total</span>
-          <span className="font-semibold">${total.toFixed(2)}</span>
+        <div className="flex flex-col gap-1 text-sm" aria-live="polite">
+          {pendingSubtotal > 0 && (
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span>Includes item not yet added</span>
+              <span className="tabular-nums">+${pendingSubtotal.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">New total</span>
+            <span className="text-base font-semibold tabular-nums">${total.toFixed(2)}</span>
+          </div>
         </div>
 
         {error && (
