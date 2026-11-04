@@ -179,7 +179,11 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
-                    {item.description && <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5 italic truncate">{item.description}</div>}
+                    {item.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
+                            {item.description}
+                          </p>
+                        )}
                     <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
                       {item.quantity} {getStockUnitLabel(item.stock_unit || "tons")} in stock
                       {item.delivery_available && " • Delivery"}
