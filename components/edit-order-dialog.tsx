@@ -176,7 +176,7 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
           Edit Order
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden [&>*]:min-w-0">
         <DialogHeader>
           <DialogTitle>Edit Order</DialogTitle>
           <DialogDescription>
@@ -205,9 +205,9 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
                 inputMode="decimal"
                 value={Number.isFinite(item.quantity) ? item.quantity : ""}
                 onChange={(e) => updateQuantity(index, e.target.value)}
-                className="w-24"
+                className="w-20 shrink-0"
               />
-              <span className="w-20 text-right text-sm font-semibold tabular-nums">
+              <span className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums">
                 ${(item.price_per_unit * (Number.isFinite(item.quantity) ? item.quantity : 0)).toFixed(2)}
               </span>
               <Button
@@ -243,7 +243,7 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
                   setNewOptionIndex("0")
                 }}
               >
-                <SelectTrigger aria-label="Product">
+                <SelectTrigger aria-label="Product" className="w-full min-w-0">
                   <SelectValue placeholder="Choose a product" />
                 </SelectTrigger>
                 <SelectContent>
@@ -257,7 +257,7 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
               {selectedRow && (
                 <div className="flex gap-2">
                   <Select value={newOptionIndex} onValueChange={setNewOptionIndex}>
-                    <SelectTrigger aria-label="Unit" className="flex-1">
+                    <SelectTrigger aria-label="Unit" className="min-w-0 flex-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -276,9 +276,9 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
                     aria-label="Quantity to add"
                     value={newQuantity}
                     onChange={(e) => setNewQuantity(e.target.value)}
-                    className="w-24"
+                    className="w-20 shrink-0"
                   />
-                  <Button type="button" variant="secondary" onClick={addItem}>
+                  <Button type="button" variant="secondary" onClick={addItem} className="shrink-0">
                     <Plus className="h-4 w-4 mr-1" />
                     Add
                   </Button>
@@ -289,12 +289,6 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
         </div>
 
         <div className="flex flex-col gap-1 text-sm" aria-live="polite">
-          {pendingSubtotal > 0 && (
-            <div className="flex items-center justify-between text-muted-foreground">
-              <span>Includes item not yet added</span>
-              <span className="tabular-nums">+${pendingSubtotal.toFixed(2)}</span>
-            </div>
-          )}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">New total</span>
             <span className="text-base font-semibold tabular-nums">${total.toFixed(2)}</span>
