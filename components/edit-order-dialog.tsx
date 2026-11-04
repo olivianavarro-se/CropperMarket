@@ -102,34 +102,43 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
   const selectedRow = inventory.find((row) => row.id === newItemId)
   const selectedOptions = selectedRow ? getOptions(selectedRow) : []
 
-  const addItem = () => {
-    if (!selectedRow) return
+  const mergePendingItem = (list: EditableOrderItem[]): EditableOrderItem[] | null => {
+    if (!selectedRow) return list
     const option = selectedOptions[Number(newOptionIndex)] || selectedOptions[0]
     const quantity = Number(newQuantity)
-    if (!option || !Number.isFinite(quantity) || quantity <= 0) {
+    if (!option || !Number.isFinite(quantity) || quantity <= 0) return null
+    const existing = list.findIndex((item) => item.inventory_id === selectedRow.id && item.unit === option.unit)
+    if (existing >= 0) {
+      return list.map((item, i) => (i === existing ? { ...item, quantity: item.quantity + quantity } : item))
+    }
+    return [
+      ...list,
+      {
+        inventory_id: selectedRow.id,
+        product_name: selectedRow.product_name,
+        quantity,
+        unit: option.unit,
+        price_per_unit: Number(option.price),
+      },
+    ]
+  }
+
+  const resetNewItem = () => {
+    setNewItemId("")
+    setNewOptionIndex("0")
+    setNewQuantity("1")
+  }
+
+  const addItem = () => {
+    if (!selectedRow) return
+    const merged = mergePendingItem(draft)
+    if (!merged) {
       setError("Enter a quantity greater than zero.")
       return
     }
     setError(null)
-    setDraft((prev) => {
-      const existing = prev.findIndex((item) => item.inventory_id === selectedRow.id && item.unit === option.unit)
-      if (existing >= 0) {
-        return prev.map((item, i) => (i === existing ? { ...item, quantity: item.quantity + quantity } : item))
-      }
-      return [
-        ...prev,
-        {
-          inventory_id: selectedRow.id,
-          product_name: selectedRow.product_name,
-          quantity,
-          unit: option.unit,
-          price_per_unit: Number(option.price),
-        },
-      ]
-    })
-    setNewItemId("")
-    setNewOptionIndex("0")
-    setNewQuantity("1")
+    setDraft(merged)
+    resetNewItem()
   }
 
   const pendingOption = selectedRow ? selectedOptions[Number(newOptionIndex)] || selectedOptions[0] : undefined
@@ -145,26 +154,38 @@ export function EditOrderDialog({ orderId, supplierId, items, onSaved }: EditOrd
   const total = itemsTotal + pendingSubtotal
 
   const save = async () => {
-    if (draft.length === 0) {
+    const finalItems = mergePendingItem(draft)
+    if (!finalItems) {
+      setError("Enter a quantity greater than zero for the item you're adding, or clear it.")
+      return
+    }
+    if (finalItems.length === 0) {
       setError("An order needs at least one item. Reject or delete the order instead.")
       return
     }
-    if (draft.some((item) => !Number.isFinite(item.quantity) || item.quantity <= 0)) {
+    if (finalItems.some((item) => !Number.isFinite(item.quantity) || item.quantity <= 0)) {
       setError("Every quantity must be greater than zero.")
       return
     }
     setSaving(true)
     setError(null)
-    const { error: saveError } = await supabase
+    const { data, error: saveError } = await supabase
       .from("order_requests")
-      .update({ requested_items: draft, updated_at: new Date().toISOString() })
+      .update({ requested_items: finalItems, updated_at: new Date().toISOString() })
       .eq("id", orderId)
+      .select("id")
     setSaving(false)
     if (saveError) {
       setError(saveError.message || "Could not save the changes.")
       return
     }
-    onSaved(draft)
+    if (!data || data.length === 0) {
+      setError("The changes could not be saved. Please refresh the page and try again.")
+      return
+    }
+    setDraft(finalItems)
+    resetNewItem()
+    onSaved(finalItems)
     setOpen(false)
   }
 
