@@ -31,14 +31,44 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
   const supabase = createClient()
 
   useEffect(() => {
+    if (activeTab !== "orders" || newOrdersCount === 0) return
+
+    // Give the buyer a moment to notice the badge before it clears.
+    const timer = setTimeout(async () => {
+      setNewOrdersCount(0)
+      await supabase
+        .from("profiles")
+        .update({ orders_seen_at: new Date().toISOString() })
+        .eq("id", userId)
+    }, 3000)
+
+    return () => clearTimeout(timer)
+  }, [activeTab, newOrdersCount, userId])
+
+  useEffect(() => {
     const fetchNewOrdersCount = async () => {
-      const { count } = await supabase
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("orders_seen_at")
+        .eq("id", userId)
+        .single()
+
+      const seenAt = profile?.orders_seen_at ?? new Date(0).toISOString()
+
+      const { data: updatedOrders } = await supabase
         .from("order_requests")
-        .select("*", { count: "exact", head: true })
+        .select("status, items_edited_at")
         .eq("requester_id", userId)
-        .eq("status", "accepted")
-      
-      setNewOrdersCount(count || 0)
+        .gt("updated_at", seenAt)
+
+      const unseen = (updatedOrders ?? []).filter(
+        (order) =>
+          order.status !== "pending" ||
+          (order.items_edited_at &&
+            new Date(order.items_edited_at).getTime() > new Date(seenAt).getTime())
+      )
+
+      setNewOrdersCount(unseen.length)
     }
 
     fetchNewOrdersCount()
