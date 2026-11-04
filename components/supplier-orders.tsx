@@ -274,8 +274,8 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
   }
 
   const renderOrderCard = (order: any, isIncoming: boolean) => (
-            <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="pb-3 bg-muted/30">
+                <Card key={order.id} className="overflow-hidden gap-0 py-0">
+                  <CardHeader className="py-4 [.border-b]:pb-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -332,7 +332,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                   </AlertDialog>
                 </div>
               </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+              <CardContent className="py-5 space-y-4">
                 {/* Customer/Supplier Info */}
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <h4 className="font-medium mb-3 flex items-center gap-2">

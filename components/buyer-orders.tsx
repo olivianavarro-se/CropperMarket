@@ -247,7 +247,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
         <div className="space-y-4">
           {filteredOrders.map((order) => (
             <Card key={order.id} className="overflow-hidden gap-0 py-0">
-              <CardHeader className="py-4 bg-muted border-b">
+              <CardHeader className="py-4 [.border-b]:pb-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -304,7 +304,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                   </AlertDialog>
                 </div>
               </CardHeader>
-              <CardContent className="pt-4 pb-6 space-y-4">
+              <CardContent className="py-5 space-y-4">
                 {/* Status Description */}
                 <div className={`p-3 rounded-lg text-sm ${
                   order.status === "pending" ? "bg-yellow-50 text-yellow-800" :
