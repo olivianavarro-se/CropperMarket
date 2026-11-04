@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -275,7 +275,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
 
   const renderOrderCard = (order: any, isIncoming: boolean) => (
                 <Card key={order.id} className="overflow-hidden gap-0 py-0">
-                  <CardHeader className="py-4 [.border-b]:pb-4 bg-muted/40 border-b">
+                  <div className="px-6 py-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -331,8 +331,8 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardHeader>
-              <CardContent className="py-5 space-y-4">
+              </div>
+              <div className="flex flex-col gap-4 px-6 pt-5 pb-6">
                 {/* Customer/Supplier Info */}
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -495,7 +495,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     )}
                   </>
                 )}
-              </CardContent>
+              </div>
             </Card>
   )
 

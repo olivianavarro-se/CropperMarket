@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, Package, Building2, MapPin, MessageSquare, Clock, RefreshCw, Trash2, Pencil } from "lucide-react"
@@ -247,7 +247,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
         <div className="space-y-4">
           {filteredOrders.map((order) => (
             <Card key={order.id} className="overflow-hidden gap-0 py-0">
-              <CardHeader className="py-4 [.border-b]:pb-4 bg-muted/40 border-b">
+              <div className="px-6 py-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -303,8 +303,8 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardHeader>
-              <CardContent className="py-5 space-y-4">
+              </div>
+              <div className="flex flex-col gap-4 px-6 pt-5 pb-6">
                 {/* Status Description */}
                 <div className={`p-3 rounded-lg text-sm ${
                   order.status === "pending" ? "bg-yellow-50 text-yellow-800" :
@@ -422,7 +422,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                     <p className="text-sm text-blue-800">{order.message}</p>
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>
