@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2, Package, User, Mail, Phone, MapPin, MessageSquare, Clock, Check, X, RefreshCw, Trash2, ShoppingCart, Store } from "lucide-react"
 import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
+import { EditOrderDialog } from "@/components/edit-order-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,6 +198,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         return
       }
 
+
       // Update local state for both incoming orders and my requests
       setIncomingOrders((prev) =>
         prev.map((order) =>
@@ -211,6 +213,12 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
     } finally {
       setUpdating(null)
     }
+  }
+
+  const updateOrderItems = (orderId: string, items: RequestedItem[]) => {
+    setIncomingOrders((prev) =>
+      prev.map((order) => (order.id === orderId ? { ...order, requested_items: items } : order))
+    )
   }
 
   const deleteOrder = async (orderId: string) => {
@@ -396,8 +404,19 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                 )}
 
                 {/* Actions - Only for incoming orders */}
+                {isIncoming && (order.status === "pending" || order.status === "accepted") && (
+                  <div className="flex pt-2 border-t">
+                    <EditOrderDialog
+                      orderId={order.id}
+                      supplierId={supplierId}
+                      items={order.requested_items}
+                      onSaved={(items) => updateOrderItems(order.id, items)}
+                    />
+                  </div>
+                )}
+
                 {isIncoming && order.status === "pending" && (
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex gap-2">
                     <Button
                       onClick={() => updateOrderStatus(order.id, "accepted")}
                       disabled={updating === order.id}
@@ -427,7 +446,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                 )}
 
                 {isIncoming && order.status === "accepted" && (
-                  <div className="pt-2 border-t">
+                  <div>
                     <Button
                       onClick={() => updateOrderStatus(order.id, "completed")}
                       disabled={updating === order.id}
