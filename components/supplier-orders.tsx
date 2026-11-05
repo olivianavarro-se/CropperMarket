@@ -199,7 +199,9 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
       }
 
 
-      // Update local state for both incoming orders and my requests
+      window.dispatchEvent(new Event("supplier-orders-changed"))
+
+  // Update local state for both incoming orders and my requests
       setIncomingOrders((prev) =>
         prev.map((order) =>
           order.id === orderId ? { ...order, status: newStatus } : order

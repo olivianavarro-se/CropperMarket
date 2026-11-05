@@ -74,7 +74,11 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
       )
       .subscribe()
 
+    // Realtime events aren't guaranteed, so also refresh when this grower updates an order locally.
+    window.addEventListener("supplier-orders-changed", fetchPendingCount)
+
     return () => {
+      window.removeEventListener("supplier-orders-changed", fetchPendingCount)
       channel.unsubscribe()
     }
   }, [supplier.id])
