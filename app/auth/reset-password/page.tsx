@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { passwordRequirements, passwordMeetsAllRequirements } from "@/lib/password-requirements"
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("")
@@ -38,13 +39,13 @@ export default function ResetPasswordPage() {
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match")
+    if (!passwordMeetsAllRequirements(password)) {
+      setError("Please make sure your password meets all requirements.")
       return
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
       return
     }
 
@@ -102,8 +103,30 @@ export default function ResetPasswordPage() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        minLength={6}
+                        aria-describedby="password-requirements"
                       />
+                      <ul
+                        id="password-requirements"
+                        className="mt-1 flex flex-col gap-1 rounded-md border bg-muted/40 px-3 py-2"
+                      >
+                        {passwordRequirements.map(({ label, test }) => {
+                          const met = test(password)
+                          return (
+                            <li key={label} className="flex items-center gap-1.5">
+                              <span
+                                aria-hidden="true"
+                                className={`text-xs font-bold leading-none ${met ? "text-green-600" : "text-red-400"}`}
+                              >
+                                {met ? "✓" : "✗"}
+                              </span>
+                              <span className={`text-xs ${met ? "text-green-700" : "text-muted-foreground"}`}>
+                                {label}
+                                <span className="sr-only">{met ? " (met)" : " (not met)"}</span>
+                              </span>
+                            </li>
+                          )
+                        })}
+                      </ul>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="confirmPassword">Confirm New Password</Label>
@@ -113,7 +136,6 @@ export default function ResetPasswordPage() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        minLength={6}
                       />
                     </div>
                     {error && <p className="text-sm text-red-500">{error}</p>}
