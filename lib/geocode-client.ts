@@ -146,13 +146,37 @@ export async function geocodeAddressClient(
   }
 }
 
+// Pages without a map (e.g. the dashboard opened directly) never load the Maps script,
+// so inject the same script MapView uses; MapView reuses it when the key matches.
+function ensureGoogleMapsScript() {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!apiKey || (window as any).google?.maps) return
+  if (document.querySelector('script[src*="maps.googleapis.com"]')) return
+
+  const script = document.createElement("script")
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&loading=async`
+  script.async = true
+  script.defer = true
+  document.head.appendChild(script)
+}
+
 // Helper to ensure Google Maps is loaded before geocoding
 export async function waitForGoogleMaps(maxWaitMs = 10000): Promise<boolean> {
   if (typeof window === "undefined") return false
 
+  ensureGoogleMapsScript()
   const startTime = Date.now()
 
-  while (!window.google?.maps?.Geocoder) {
+  while (!(window as any).google?.maps?.Geocoder) {
+    const maps = (window as any).google?.maps
+    if (maps?.importLibrary) {
+      try {
+        await maps.importLibrary("geocoding")
+        if ((window as any).google?.maps?.Geocoder) break
+      } catch {
+        // fall through to retry until timeout
+      }
+    }
     if (Date.now() - startTime > maxWaitMs) {
       return false
     }
