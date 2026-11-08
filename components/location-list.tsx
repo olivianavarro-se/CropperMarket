@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Trash2, MapPin, Edit2, Package, Check, X, AlertCircle } from "lucide-react"
+import { Plus, Trash2, MapPin, Edit2, Package, Check, X, AlertCircle, EyeOff } from "lucide-react"
 import type { Location, Inventory, StockUnit, SellingUnit, PricingOption } from "@/lib/types"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { HAY_TYPES } from "@/lib/hay-types"
@@ -604,6 +604,12 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                                 Transport
                               </Badge>
                             )}
+                            {location.inventory.length === 0 && (
+                              <Badge variant="outline" className="gap-1 border-destructive/30 bg-destructive/5 text-destructive">
+                                <EyeOff className="h-3 w-3" aria-hidden="true" />
+                                Not on map yet
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {location.address}, {location.city}, {location.state} {location.zip_code}
@@ -713,7 +719,12 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">
                           <Package className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                          <p className="text-sm">No inventory items at this location</p>
+                          <p className="text-sm font-medium text-foreground">No inventory items at this location</p>
+                          <p className="text-sm text-pretty mt-1 max-w-sm mx-auto">
+                            {location.offers_squeeze || location.offers_transport
+                              ? "This location and its services won't be visible on the map until you add inventory."
+                              : "This location won't be visible on the map until you add inventory."}
+                          </p>
                         </div>
                       )}
 
