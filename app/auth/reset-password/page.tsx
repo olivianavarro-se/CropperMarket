@@ -10,11 +10,14 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { Eye, EyeOff } from "lucide-react"
 import { passwordRequirements, passwordMeetsAllRequirements } from "@/lib/password-requirements"
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isReady, setIsReady] = useState(false)
@@ -131,15 +134,26 @@ export default function ResetPasswordPage() {
                       <Label htmlFor="password" className="text-[#65411C] text-sm">
                         New Password
                       </Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        aria-describedby="password-requirements"
-                        className="border-[#D4AF8E] h-9"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          aria-describedby="password-requirements"
+                          className="pr-10 border-[#D4AF8E] h-9"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-pressed={showPassword}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
+                        >
+                          {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                       <ul
                         id="password-requirements"
                         className="mt-1 flex flex-col gap-1 rounded-md border border-[#D4AF8E] bg-[#FAF8F5] px-3 py-2"
@@ -167,14 +181,25 @@ export default function ResetPasswordPage() {
                       <Label htmlFor="confirmPassword" className="text-[#65411C] text-sm">
                         Confirm New Password
                       </Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        required
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="border-[#D4AF8E] h-9"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          required
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="pr-10 border-[#D4AF8E] h-9"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                          aria-pressed={showConfirmPassword}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A6842] hover:text-[#65411C]"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
                     {error && <p className="text-xs text-red-500">{error}</p>}
                     <Button
