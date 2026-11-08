@@ -15,6 +15,12 @@ import { HAY_TYPES } from "@/lib/hay-types"
 import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 import { geocodeAddressClient, waitForGoogleMaps } from "@/lib/geocode-client"
 import { InventoryItemEdit } from "@/components/inventory-item-edit"
+import {
+  LocationServicesFields,
+  EMPTY_SERVICES,
+  servicesToColumns,
+  type LocationServicesValue,
+} from "@/components/location-services-fields"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -63,6 +69,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
   const [editState, setEditState] = useState("")
   const [editZipCode, setEditZipCode] = useState("")
   const [editDeliveryAvailable, setEditDeliveryAvailable] = useState(false)
+  const [services, setServices] = useState<LocationServicesValue>(EMPTY_SERVICES)
+  const [editServices, setEditServices] = useState<LocationServicesValue>(EMPTY_SERVICES)
 
   // Inventory form state
   const [hayType, setHayType] = useState("")
@@ -96,6 +104,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setCity("")
     setState("")
     setZipCode("")
+    setServices(EMPTY_SERVICES)
     setError(null)
   }
 
@@ -107,6 +116,12 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setEditState(location.state)
     setEditZipCode(location.zip_code || "")
     setEditDeliveryAvailable(location.delivery_available)
+    setEditServices({
+      offersSqueeze: !!location.offers_squeeze,
+      offersTransport: !!location.offers_transport,
+      squeezeNotes: location.squeeze_notes || "",
+      transportNotes: location.transport_notes || "",
+    })
     setError(null)
   }
 
@@ -168,6 +183,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
           latitude: result.latitude,
           longitude: result.longitude,
           delivery_available: editDeliveryAvailable,
+          ...servicesToColumns(editServices),
         })
         .eq("id", locationId)
 
@@ -237,6 +253,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
         zip_code: finalZipCode,
         latitude: result.latitude,
         longitude: result.longitude,
+        ...servicesToColumns(services),
       })
 
       if (error) throw error
@@ -353,7 +370,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Locations & Inventory</h2>
-          <p className="text-sm text-muted-foreground mt-1">Manage your farm locations and inventory items</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage your farm locations, inventory, and hay squeeze or transport services</p>
         </div>
         {!isAddingLocation && (
           <Button onClick={() => setIsAddingLocation(true)} size="lg">
@@ -424,6 +441,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                   <Input id="zip" value={zipCode} onChange={(e) => setZipCode(e.target.value)} placeholder="85701" />
                 </div>
               </div>
+
+              <LocationServicesFields idPrefix="new" value={services} onChange={setServices} />
 
               {error && (
                 <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
@@ -534,6 +553,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                       </Label>
                     </div>
 
+                    <LocationServicesFields idPrefix="edit" value={editServices} onChange={setEditServices} />
+
                     {error && (
                       <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
                         <p className="text-sm text-destructive">{error}</p>
@@ -571,6 +592,16 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                             ) : (
                               <Badge variant="outline" className="bg-gray-50 border-gray-200 text-gray-600">
                                 No Delivery
+                              </Badge>
+                            )}
+                            {location.offers_squeeze && (
+                              <Badge variant="outline" className="bg-squeeze-bg border-squeeze-border text-squeeze">
+                                Hay squeeze
+                              </Badge>
+                            )}
+                            {location.offers_transport && (
+                              <Badge variant="outline" className="bg-transport-bg border-transport-border text-transport">
+                                Transport
                               </Badge>
                             )}
                           </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { X, Phone, MapPin, Package, Mail, Lock } from "lucide-react"
+import { X, Phone, MapPin, Package, Mail, Lock, Truck, Forklift } from "lucide-react"
 import type { LocationWithSupplier } from "@/lib/types"
 import { getStockUnitLabel, getSellingUnitLabel } from "@/lib/unit-labels"
 import { HAY_TYPES } from "@/lib/hay-types"
@@ -75,6 +75,23 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
   }
 
   const isOwnFarm = userSupplierId && userSupplierId === supplier.id
+  const sellsHay = location.inventory.length > 0
+  const services = [
+    location.offers_squeeze && {
+      key: "squeeze",
+      label: "Hay squeeze",
+      notes: location.squeeze_notes,
+      Icon: Forklift,
+      className: "bg-squeeze-bg border-squeeze-border text-squeeze",
+    },
+    location.offers_transport && {
+      key: "transport",
+      label: "Hay transport",
+      notes: location.transport_notes,
+      Icon: Truck,
+      className: "bg-transport-bg border-transport-border text-transport",
+    },
+  ].filter(Boolean) as { key: string; label: string; notes: string | null; Icon: typeof Truck; className: string }[]
 
   return (
     <Card className="shadow-2xl border-0 overflow-hidden text-sm">
@@ -104,6 +121,15 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
+                {services.map(({ key, label, className }) => (
+                  <Badge
+                    key={key}
+                    variant="outline"
+                    className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 shadow-sm ${className}`}
+                  >
+                    {label}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
@@ -152,6 +178,31 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
           </div>
         )}
 
+        {services.length > 0 && (
+          <div className="border-t border-hay-border pt-2.5 md:pt-3 flex flex-col gap-2">
+            <h3 className="font-semibold text-xs md:text-sm">Services</h3>
+            {services.map(({ key, label, notes, Icon, className }) => (
+              <div key={key} className={`flex items-start gap-2 p-2 md:p-2.5 rounded-lg border ${className}`}>
+                <Icon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-xs md:text-sm">{label}</div>
+                  {notes && (
+                    <p className="text-xs text-foreground/80 mt-0.5 leading-relaxed whitespace-pre-line break-words">
+                      {notes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+            <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">
+              {isAuthenticated
+                ? `Call ${supplier.phone ? supplier.phone : supplier.business_name} to book a service.`
+                : "Sign in to see the phone number and book a service."}
+            </p>
+          </div>
+        )}
+
+        {sellsHay && (
         <div className="border-t border-hay-border pt-2.5 md:pt-3">
           <div className="flex items-center gap-1.5 mb-2">
             <Package className="h-3.5 w-3.5 text-hay-gold" />
@@ -207,8 +258,9 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
             </p>
           )}
         </div>
+        )}
 
-        {!isOwnFarm && (
+        {!isOwnFarm && (sellsHay || !isAuthenticated) && (
           <Button
             size="sm"
             className="w-full shadow-md hover:shadow-lg transition-all h-8 md:h-9 text-xs md:text-sm bg-hay-dark hover:bg-hay-dark-hover text-white"

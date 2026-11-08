@@ -11,9 +11,14 @@ import { Search, SlidersHorizontal, X, ChevronUp, ChevronDown, List } from "luci
 import { HAY_TYPES } from "@/lib/hay-types"
 import { useUserLocation } from "@/hooks/use-user-location"
 import type { LocationWithSupplier } from "@/lib/types"
+import { MapLegend } from "@/components/map-legend"
+import { getOfferings, getOfferingColor, OFFERING_LABELS } from "@/lib/location-services"
+
+type ServiceKey = "squeeze" | "transport"
 
 type FilterOptions = {
   type: "all" | "broker" | "grower"
+  services: ServiceKey[]
   hasInventory: boolean
   deliveryAvailable: boolean
   hayTypes: string[]
@@ -42,6 +47,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
   const [mobileShowListings, setMobileShowListings] = useState(false)
   const [filters, setFilters] = useState<FilterOptions>({
     type: "all",
+    services: [],
     hasInventory: false,
     deliveryAvailable: false,
     hayTypes: [],
@@ -79,6 +85,11 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
           location.inventory.some((item) => item.product_name.toLowerCase().includes(searchTerm.toLowerCase())))
 
       const matchesType = filters.type === "all" || supplier.supplier_type === filters.type
+      const matchesServices =
+        filters.services.length === 0 ||
+        filters.services.some((service) =>
+          service === "squeeze" ? location.offers_squeeze : location.offers_transport,
+        )
       const matchesInventory = !filters.hasInventory || (location.inventory && location.inventory.length > 0)
       const matchesDelivery =
         !filters.deliveryAvailable || location.delivery_available
@@ -128,6 +139,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       return (
         matchesSearch &&
         matchesType &&
+        matchesServices &&
         matchesInventory &&
         matchesDelivery &&
         matchesZipCode &&
@@ -158,9 +170,31 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
     }))
   }
 
+  const toggleService = (service: ServiceKey) => {
+    setFilters((prev) => ({
+      ...prev,
+      services: prev.services.includes(service)
+        ? prev.services.filter((v) => v !== service)
+        : [...prev.services, service],
+    }))
+  }
+
+  const setSupplierType = (type: FilterOptions["type"]) => setFilters((prev) => ({ ...prev, type }))
+
+  const renderLegend = (compact = false) => (
+    <MapLegend
+      type={filters.type}
+      services={filters.services}
+      onTypeChange={setSupplierType}
+      onToggleService={toggleService}
+      compact={compact}
+    />
+  )
+
   const clearAllFilters = () => {
     setFilters({
       type: "all",
+      services: [],
       hasInventory: false,
       deliveryAvailable: false,
       hayTypes: [],
@@ -177,6 +211,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
 
   const activeFilterCount = [
     filters.type !== "all" ? 1 : 0,
+    filters.services.length,
     filters.hasInventory ? 1 : 0,
     filters.deliveryAvailable ? 1 : 0,
     filters.hayTypes.length + (filters.customHayType ? 1 : 0),
@@ -230,6 +265,34 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
                 </Label>
               </div>
             </RadioGroup>
+          </div>
+
+          {/* Services */}
+          <div>
+            <Label className="text-sm font-semibold mb-3 block">Services</Label>
+            <div className="space-y-2">
+              {(
+                [
+                  { value: "squeeze", label: "Hay squeeze", dot: "bg-squeeze" },
+                  { value: "transport", label: "Hay transport", dot: "bg-transport" },
+                ] as const
+              ).map((service) => (
+                <div key={service.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`service-${service.value}`}
+                    checked={filters.services.includes(service.value)}
+                    onCheckedChange={() => toggleService(service.value)}
+                  />
+                  <Label
+                    htmlFor={`service-${service.value}`}
+                    className="font-normal cursor-pointer text-sm flex items-center gap-2"
+                  >
+                    <span className={`w-2.5 h-2.5 rounded-full ${service.dot}`} aria-hidden="true" />
+                    {service.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Hay Type */}
@@ -456,11 +519,15 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-1">
                     <div className="font-semibold text-base text-foreground">{location.supplier.business_name}</div>
-                  <div
-                    className={`w-3 h-3 rounded-full shrink-0 mt-1 shadow-sm ${
-                      location.supplier.supplier_type === "broker" ? "bg-broker" : "bg-grower"
-                    }`}
-                  />
+                  <div className="flex gap-1 shrink-0 mt-1" aria-hidden="true">
+                    {getOfferings(location).map((offering) => (
+                      <span
+                        key={offering}
+                        className="w-3 h-3 rounded-full shadow-sm"
+                        style={{ backgroundColor: getOfferingColor(offering, location.supplier.supplier_type) }}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground capitalize mb-1">
                   {location.supplier.supplier_type === "broker" ? "Broker" : "Grower"} • {location.name}
@@ -473,11 +540,23 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
                 {location.city}, {location.state} {location.zip_code}
               </div>
             </div>
-            {location.inventory.length > 0 && (
-              <div className="text-xs text-hay-medium">
-                {location.inventory.length} item{location.inventory.length !== 1 ? "s" : ""} available
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {location.inventory.length > 0 && (
+                <span className="text-xs text-hay-medium">
+                  {location.inventory.length} item{location.inventory.length !== 1 ? "s" : ""} available
+                </span>
+              )}
+              {location.offers_squeeze && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-squeeze-bg border-squeeze-border text-squeeze">
+                  {OFFERING_LABELS.squeeze}
+                </span>
+              )}
+              {location.offers_transport && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full border bg-transport-bg border-transport-border text-transport">
+                  {OFFERING_LABELS.transport}
+                </span>
+              )}
+            </div>
           </button>
         ))
       )}
@@ -573,16 +652,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
               <h2 className="text-lg font-bold text-gray-900">
                 {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
               </h2>
-              <div className="flex gap-2 mt-1">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-grower"></div>
-                  <span className="text-[10px] font-medium text-foreground">Grower</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-broker"></div>
-                  <span className="text-[10px] font-medium text-foreground">Broker</span>
-                </div>
-              </div>
+              <div className="mt-1">{renderLegend(true)}</div>
             </div>
             <Button variant="ghost" size="icon" onClick={() => setMobileShowListings(false)}>
               <X className="h-5 w-5" />
@@ -613,16 +683,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
           <h2 className="text-2xl font-bold text-gray-900 mb-1">
             {filteredLocations.length} {filteredLocations.length === 1 ? "Location" : "Locations"}
           </h2>
-          <div className="flex gap-3 mt-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-grower-bg rounded-full border border-grower-border">
-              <div className="w-2.5 h-2.5 rounded-full bg-grower shadow-sm"></div>
-              <span className="text-xs font-semibold text-foreground">Grower</span>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-broker-bg rounded-full border border-broker-border">
-              <div className="w-2.5 h-2.5 rounded-full bg-broker shadow-sm"></div>
-              <span className="text-xs font-semibold text-foreground">Broker</span>
-            </div>
-          </div>
+          <div className="mt-4">{renderLegend()}</div>
         </div>
         {renderListingCards()}
       </div>

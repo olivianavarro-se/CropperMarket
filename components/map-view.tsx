@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { LocationCard } from "@/components/location-card"
 import type { LocationWithSupplier } from "@/lib/types"
+import { getPinColors } from "@/lib/location-services"
 
 interface MapViewProps {
   locations: LocationWithSupplier[]
@@ -16,6 +17,43 @@ interface MapViewProps {
 }
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
+
+function buildPinElement(colors: string[]) {
+  const pin = document.createElement("div")
+  pin.style.cursor = "pointer"
+  pin.style.borderRadius = "50%"
+  pin.style.border = "3px solid #ffffff"
+  pin.style.boxShadow = "0 1px 4px rgba(0,0,0,0.35)"
+
+  if (colors.length === 1) {
+    pin.style.width = "20px"
+    pin.style.height = "20px"
+    pin.style.backgroundColor = colors[0]
+    return pin
+  }
+
+  // Each offering gets an equal slice of the ring so buyers can tell what's at this spot.
+  const slice = 360 / colors.length
+  const stops = colors.map((c, i) => `${c} ${i * slice}deg ${(i + 1) * slice}deg`).join(", ")
+  pin.style.width = "30px"
+  pin.style.height = "30px"
+  pin.style.background = `conic-gradient(${stops})`
+  pin.style.display = "flex"
+  pin.style.alignItems = "center"
+  pin.style.justifyContent = "center"
+
+  const count = document.createElement("span")
+  count.textContent = String(colors.length)
+  count.style.width = "18px"
+  count.style.height = "18px"
+  count.style.borderRadius = "50%"
+  count.style.background = "#ffffff"
+  count.style.color = "#1f2937"
+  count.style.font = "700 11px/18px system-ui, sans-serif"
+  count.style.textAlign = "center"
+  pin.appendChild(count)
+  return pin
+}
 
 function removeMarker(marker: any) {
   if (typeof marker.setMap === "function") marker.setMap(null)
@@ -85,16 +123,19 @@ export function MapView({
     try {
     locations.forEach((location) => {
       const hasLatLng = !!(location.latitude && location.longitude)
-      const hasInventory = location.inventory && location.inventory.length > 0
-      if (!hasLatLng || !hasInventory) return
+      const colors = getPinColors(location)
+      if (!hasLatLng || colors.length === 0) return
 
-      const id = String(location.id)
+      // Including the colors in the key rebuilds the pin when a location's services change.
+      const id = `${location.id}:${colors.join(",")}`
       visibleIds.add(id)
       if (markersRef.current.has(id)) return
 
       const position = { lat: Number(location.latitude), lng: Number(location.longitude) }
-      const color = location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a"
-      const title = `${location.supplier.business_name} - ${location.name}`
+      const isMulti = colors.length > 1
+      const title = `${location.supplier.business_name} - ${location.name}${
+        isMulti ? ` (${colors.length} offerings)` : ""
+      }`
       const handleClick = () => {
         hasUserInteracted.current = true
         onLocationSelectRef.current?.(location)
@@ -106,28 +147,25 @@ export function MapView({
       let marker: any
 
       if (AdvancedMarkerElement) {
-        const pinElement = document.createElement("div")
-        pinElement.style.width = "20px"
-        pinElement.style.height = "20px"
-        pinElement.style.borderRadius = "50%"
-        pinElement.style.backgroundColor = color
-        pinElement.style.border = "3px solid #ffffff"
-        pinElement.style.cursor = "pointer"
-
-        marker = new AdvancedMarkerElement({ map, position, title, content: pinElement })
+        const pinElement = buildPinElement(colors)
+        marker = new AdvancedMarkerElement({ map, position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
         pinElement.addEventListener("click", handleClick)
       } else {
         marker = new window.google.maps.Marker({
           map,
           position,
           title,
+          zIndex: isMulti ? 2 : 1,
+          label: isMulti
+            ? { text: String(colors.length), color: "#ffffff", fontSize: "11px", fontWeight: "700" }
+            : undefined,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            fillColor: color,
+            fillColor: colors[0],
             fillOpacity: 1,
-            strokeColor: "#ffffff",
+            strokeColor: isMulti ? colors[1] : "#ffffff",
             strokeWeight: 3,
-            scale: 10,
+            scale: isMulti ? 13 : 10,
           },
         })
         marker.addListener("click", handleClick)
@@ -315,6 +353,7 @@ export function MapView({
     const hasActiveFilters =
       activeFilters &&
       (activeFilters.type !== "all" ||
+        activeFilters.services?.length > 0 ||
         activeFilters.hasInventory ||
         activeFilters.deliveryAvailable ||
         activeFilters.hayTypes.length > 0 ||
