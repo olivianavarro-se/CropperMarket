@@ -370,7 +370,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     Requested Items
                   </h4>
                   <div className="space-y-2">
-                    {order.requested_items.map((item, idx) => (
+                    {order.requested_items.map((item: RequestedItem, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-3 bg-muted/20 rounded-lg"
@@ -397,7 +397,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     <span className="text-lg font-bold text-green-700 tabular-nums">
                       $
                       {order.requested_items
-                        .reduce((sum, item) => sum + item.price_per_unit * item.quantity, 0)
+                        .reduce((sum: number, item: RequestedItem) => sum + item.price_per_unit * item.quantity, 0)
                         .toFixed(2)}
                     </span>
                   </div>
