@@ -7,10 +7,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
-import { useState } from "react"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordContent />
+    </Suspense>
+  )
+}
+
+function ForgotPasswordContent() {
+  const searchParams = useSearchParams()
+  const linkExpired = searchParams.get("error") === "link_expired"
   const [email, setEmail] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -24,9 +35,9 @@ export default function ForgotPasswordPage() {
     setSuccess(false)
 
     try {
-      const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL
-        ? `${process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL}/auth/reset-password`
-        : `${window.location.origin}/auth/reset-password`
+      const devRedirect =
+        process.env.NODE_ENV === "development" ? process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL : undefined
+      const redirectUrl = `${devRedirect || window.location.origin}/auth/reset-password`
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
@@ -79,6 +90,15 @@ export default function ForgotPasswordPage() {
               ) : (
                 <form onSubmit={handleResetPassword}>
                   <div className="flex flex-col gap-3">
+                    {linkExpired && (
+                      <div
+                        role="alert"
+                        className="rounded-lg bg-[#FCE2A4]/40 p-3 text-xs text-[#65411C] border border-[#F0B349]"
+                      >
+                        That reset link has expired or was already used. Enter your email below to get a new one. Only
+                        the most recent link will work.
+                      </div>
+                    )}
                     <div className="grid gap-1">
                       <Label htmlFor="email" className="text-[#65411C] text-sm">
                         Email

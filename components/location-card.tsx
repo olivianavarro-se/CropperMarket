@@ -40,7 +40,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
           item.product_name.toLowerCase().includes(activeFilters.customHayType.toLowerCase())) ||
         (activeFilters.hayTypes.includes("Other") &&
           !activeFilters.customHayType &&
-          !HAY_TYPES.filter((t) => t !== "Other").includes(item.product_name))
+          !HAY_TYPES.some((t) => t !== "Other" && t === item.product_name))
 
       // Filter by price range - only check if price filter is active
       const priceFilterActive = activeFilters.minPrice || activeFilters.maxPrice
@@ -59,14 +59,12 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
 
       // Filter by delivery availability - only check if delivery filter is active
       const deliveryFilterActive = activeFilters.deliveryAvailable
-      const matchesDelivery = !deliveryFilterActive || item.delivery_available
+      const matchesDelivery = !deliveryFilterActive || location.delivery_available
 
       // Item must match ALL active filters
       return matchesHayType && matchesPriceRange && matchesSellingUnit && matchesDelivery
     })
   }, [location.inventory, activeFilters])
-
-  const hasDelivery = filteredInventory.some((item) => item.delivery_available)
 
   const handleContactClick = () => {
     if (!isAuthenticated) {
@@ -106,11 +104,6 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 >
                   {supplier.supplier_type === "broker" ? "Broker" : "Grower"}
                 </Badge>
-                {hasDelivery && (
-                  <Badge variant="outline" className="text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 bg-grower-bg border-grower-border text-grower shadow-sm">
-                    Delivery
-                  </Badge>
-                )}
               </div>
             </div>
           </div>
@@ -179,10 +172,13 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 >
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
-                    {item.description && <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5 italic truncate">{item.description}</div>}
+                    {item.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
+                            {item.description}
+                          </p>
+                        )}
                     <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
                       {item.quantity} {getStockUnitLabel(item.stock_unit || "tons")} in stock
-                      {item.delivery_available && " • Delivery"}
                     </div>
                   </div>
                   <div className="text-right ml-2 shrink-0">

@@ -2,6 +2,14 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function updateSession(request: NextRequest) {
+  // Supabase falls back to the Site URL with ?error_code=... when an email link is invalid or expired.
+  if (request.nextUrl.searchParams.has("error_code") && !request.nextUrl.pathname.startsWith("/auth")) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/auth/forgot-password"
+    url.search = "?error=link_expired"
+    return NextResponse.redirect(url)
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })

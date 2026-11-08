@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Loader2, Package, User, Mail, Phone, MapPin, MessageSquare, Clock, Check, X, RefreshCw, Trash2, ShoppingCart, Store } from "lucide-react"
 import { PickupHoursDisplay } from "@/components/pickup-hours-editor"
+import { EditOrderDialog } from "@/components/edit-order-dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -197,7 +198,10 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
         return
       }
 
-      // Update local state for both incoming orders and my requests
+
+      window.dispatchEvent(new Event("supplier-orders-changed"))
+
+  // Update local state for both incoming orders and my requests
       setIncomingOrders((prev) =>
         prev.map((order) =>
           order.id === orderId ? { ...order, status: newStatus } : order
@@ -211,6 +215,12 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
     } finally {
       setUpdating(null)
     }
+  }
+
+  const updateOrderItems = (orderId: string, items: RequestedItem[]) => {
+    setIncomingOrders((prev) =>
+      prev.map((order) => (order.id === orderId ? { ...order, requested_items: items } : order))
+    )
   }
 
   const deleteOrder = async (orderId: string) => {
@@ -266,16 +276,16 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
   }
 
   const renderOrderCard = (order: any, isIncoming: boolean) => (
-            <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="pb-3 bg-muted/30">
+                <Card key={order.id} className="overflow-hidden gap-0 py-0">
+                  <div className="px-6 py-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <CardTitle className="text-lg">
                         Order Request
                       </CardTitle>
-                      <Badge className={statusColors[order.status]}>
-                        {statusLabels[order.status]}
+                      <Badge className={statusColors[order.status as keyof typeof statusColors]}>
+                        {statusLabels[order.status as keyof typeof statusLabels]}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -323,8 +333,8 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+              </div>
+              <div className="flex flex-col gap-4 px-6 pt-5 pb-6">
                 {/* Customer/Supplier Info */}
                 <div className="p-4 bg-muted/20 rounded-lg">
                   <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -360,7 +370,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     Requested Items
                   </h4>
                   <div className="space-y-2">
-                    {order.requested_items.map((item, idx) => (
+                    {order.requested_items.map((item: RequestedItem, idx: number) => (
                       <div
                         key={idx}
                         className="flex items-center justify-between p-3 bg-muted/20 rounded-lg"
@@ -382,6 +392,15 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                       </div>
                     ))}
                   </div>
+                  <div className="mt-3 flex items-center justify-between border-t pt-3">
+                    <span className="font-medium">Order Total</span>
+                    <span className="text-lg font-bold text-green-700 tabular-nums">
+                      $
+                      {order.requested_items
+                        .reduce((sum: number, item: RequestedItem) => sum + item.price_per_unit * item.quantity, 0)
+                        .toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Message */}
@@ -396,8 +415,19 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                 )}
 
                 {/* Actions - Only for incoming orders */}
+                {isIncoming && (order.status === "pending" || order.status === "accepted") && (
+                  <div className="flex pt-2 border-t">
+                    <EditOrderDialog
+                      orderId={order.id}
+                      supplierId={supplierId}
+                      items={order.requested_items}
+                      onSaved={(items) => updateOrderItems(order.id, items)}
+                    />
+                  </div>
+                )}
+
                 {isIncoming && order.status === "pending" && (
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex gap-2">
                     <Button
                       onClick={() => updateOrderStatus(order.id, "accepted")}
                       disabled={updating === order.id}
@@ -427,7 +457,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                 )}
 
                 {isIncoming && order.status === "accepted" && (
-                  <div className="pt-2 border-t">
+                  <div>
                     <Button
                       onClick={() => updateOrderStatus(order.id, "completed")}
                       disabled={updating === order.id}
@@ -467,7 +497,7 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                     )}
                   </>
                 )}
-              </CardContent>
+              </div>
             </Card>
   )
 

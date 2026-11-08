@@ -36,7 +36,7 @@ export async function geocodeAddressClient(
     const geocoder = new window.google.maps.Geocoder()
 
     return new Promise((resolve) => {
-      geocoder.geocode({ address: fullAddress }, (results, status) => {
+      geocoder.geocode({ address: fullAddress }, (results: any, status: string) => {
         console.log("[v0] Geocoding response:", { status, results })
 
         if (status === "OK" && results && results[0]) {

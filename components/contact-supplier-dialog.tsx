@@ -269,7 +269,6 @@ export function ContactSupplierDialog({
                           )}
                           <div className="text-xs text-gray-600 mt-1">
                             {item.quantity} available
-                            {item.delivery_available && " • Delivery available"}
                           </div>
 
                           {hasPricingOptions ? (

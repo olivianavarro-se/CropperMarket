@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Package, Building2, MapPin, MessageSquare, Clock, RefreshCw, Trash2 } from "lucide-react"
+import { Loader2, Package, Building2, MapPin, MessageSquare, Clock, RefreshCw, Trash2, Pencil } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,7 @@ interface OrderRequest {
   status: "pending" | "accepted" | "rejected" | "completed"
   created_at: string
   updated_at: string
+  items_edited_at: string | null
   supplier: {
     business_name: string
     phone: string | null
@@ -245,8 +246,8 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <Card key={order.id} className="overflow-hidden">
-              <CardHeader className="pb-3 bg-muted/30">
+            <Card key={order.id} className="overflow-hidden gap-0 py-0">
+              <div className="px-6 py-4 bg-muted/40 border-b">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -302,21 +303,32 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                     </AlertDialogContent>
                   </AlertDialog>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-4 space-y-4">
+              </div>
+              <div className="flex flex-col gap-4 px-6 pt-5 pb-6">
                 {/* Status Description */}
-                <div className={`p-3 rounded-lg text-sm ${
-                  order.status === "pending" ? "bg-yellow-50 text-yellow-800" :
-                  order.status === "accepted" ? "bg-green-50 text-green-800" :
-                  order.status === "rejected" ? "bg-red-50 text-red-800" :
-                  "bg-blue-50 text-blue-800"
+                <div className={`p-3 rounded-lg text-sm border ${
+                  order.status === "pending" ? "bg-yellow-50 text-yellow-800 border-yellow-200" :
+                  order.status === "accepted" ? "bg-green-50 text-green-800 border-green-200" :
+                  order.status === "rejected" ? "bg-red-50 text-red-800 border-red-200" :
+                  "bg-blue-50 text-blue-800 border-blue-200"
                 }`}>
                   {statusDescriptions[order.status]}
                 </div>
 
+                {order.items_edited_at && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg text-sm bg-amber-50 text-amber-900 border border-amber-200">
+                    <Pencil className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+                    <p>
+                      <span className="font-medium">Supplier changed your request</span>{" "}
+                      {formatDistanceToNow(new Date(order.items_edited_at), { addSuffix: true })}.
+                      {" "}The items and total below are the updated ones.
+                    </p>
+                  </div>
+                )}
+
                 {/* Supplier Contact Info (show only if accepted) */}
                 {order.status === "accepted" && (order.supplier?.email || order.supplier?.phone) && (
-                  <div className="p-4 bg-muted/20 rounded-lg">
+                  <div className="p-4 bg-muted/60 border rounded-lg">
                     <h4 className="font-medium mb-3 flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
                       Supplier Contact
@@ -370,7 +382,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                     {order.requested_items.map((item, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between p-3 bg-muted/20 rounded-lg"
+                        className="flex items-center justify-between p-3 bg-muted/60 border rounded-lg"
                       >
                         <div>
                           <span className="font-medium">{item.product_name}</span>
@@ -389,6 +401,15 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                       </div>
                     ))}
                   </div>
+                  <div className="mt-3 flex items-center justify-between border-t pt-3">
+                    <span className="font-medium">Order Total</span>
+                    <span className="text-lg font-bold text-green-700 tabular-nums">
+                      $
+                      {order.requested_items
+                        .reduce((sum, item) => sum + item.price_per_unit * item.quantity, 0)
+                        .toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Your Message */}
@@ -401,7 +422,7 @@ export function BuyerOrders({ userId }: BuyerOrdersProps) {
                     <p className="text-sm text-blue-800">{order.message}</p>
                   </div>
                 )}
-              </CardContent>
+              </div>
             </Card>
           ))}
         </div>

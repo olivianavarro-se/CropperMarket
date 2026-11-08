@@ -2,7 +2,8 @@
 
 import React from "react"
 import { useState, useEffect } from "react"
-import { Building2, MapPin, Calendar, ShoppingCart } from "lucide-react"
+import { Building2, MapPin, Calendar, ShoppingCart, Users } from "lucide-react"
+import { CustomerList } from "@/components/customer-list"
 import { cn } from "@/lib/utils"
 import type { Supplier, Location, Inventory } from "@/lib/types"
 import { SupplierProfile } from "@/components/supplier-profile"
@@ -22,7 +23,7 @@ interface DashboardTabsProps {
   locations: LocationWithInventory[]
 }
 
-type TabId = "profile" | "locations" | "calendar" | "orders"
+type TabId = "profile" | "locations" | "calendar" | "orders" | "customers"
 
 interface Tab {
   id: TabId
@@ -35,6 +36,7 @@ const tabs: Tab[] = [
   { id: "orders", label: "Orders", icon: ShoppingCart },
   { id: "locations", label: "Locations & Inventory", icon: MapPin },
   { id: "calendar", label: "Calendar", icon: Calendar },
+  { id: "customers", label: "Customer List", icon: Users },
 ]
 
 export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProps) {
@@ -72,7 +74,11 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
       )
       .subscribe()
 
+    // Realtime events aren't guaranteed, so also refresh when this grower updates an order locally.
+    window.addEventListener("supplier-orders-changed", fetchPendingCount)
+
     return () => {
+      window.removeEventListener("supplier-orders-changed", fetchPendingCount)
       channel.unsubscribe()
     }
   }, [supplier.id])
@@ -176,6 +182,8 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
             </div>
           </div>
         )}
+
+        {activeTab === "customers" && <CustomerList supplierId={supplier.id} />}
 
         {activeTab === "orders" && (
           <SupplierOrdersWrapper supplierId={supplier.id} userId={userId} />
