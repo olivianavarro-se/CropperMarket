@@ -38,3 +38,10 @@ export function getOfferingColor(offering: Offering, supplierType: SupplierType)
 export function getPinColors(location: LocationWithSupplier) {
   return getOfferings(location).map((offering) => getOfferingColor(offering, location.supplier.supplier_type))
 }
+
+export function getPinItems(location: LocationWithSupplier) {
+  return getOfferings(location).map((offering) => ({
+    offering,
+    color: getOfferingColor(offering, location.supplier.supplier_type),
+  }))
+}

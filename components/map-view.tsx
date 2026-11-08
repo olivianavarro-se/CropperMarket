@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { LocationCard } from "@/components/location-card"
 import type { LocationWithSupplier } from "@/lib/types"
-import { getPinColors } from "@/lib/location-services"
+import { getPinColors, getPinItems, type Offering } from "@/lib/location-services"
 
 interface MapViewProps {
   locations: LocationWithSupplier[]
@@ -18,41 +18,56 @@ interface MapViewProps {
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
 
-function buildPinElement(colors: string[]) {
-  const pin = document.createElement("div")
-  pin.style.cursor = "pointer"
-  pin.style.borderRadius = "50%"
-  pin.style.border = "3px solid #ffffff"
-  pin.style.boxShadow = "0 1px 4px rgba(0,0,0,0.35)"
+// Lucide icon paths (wheat, package, truck), inlined because map pins are plain DOM, not React.
+const OFFERING_ICON_PATHS: Record<Offering, string> = {
+  hay: '<path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/>',
+  squeeze:
+    '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>',
+  transport:
+    '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+}
 
-  if (colors.length === 1) {
-    pin.style.width = "20px"
-    pin.style.height = "20px"
-    pin.style.backgroundColor = colors[0]
-    return pin
-  }
+function buildPinElement(items: { offering: Offering; color: string }[]) {
+  const wrapper = document.createElement("div")
+  wrapper.style.cursor = "pointer"
+  wrapper.style.display = "flex"
+  wrapper.style.flexDirection = "column"
+  wrapper.style.alignItems = "center"
+  wrapper.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
 
-  // Each offering gets an equal slice of the ring so buyers can tell what's at this spot.
-  const slice = 360 / colors.length
-  const stops = colors.map((c, i) => `${c} ${i * slice}deg ${(i + 1) * slice}deg`).join(", ")
-  pin.style.width = "30px"
-  pin.style.height = "30px"
-  pin.style.background = `conic-gradient(${stops})`
-  pin.style.display = "flex"
-  pin.style.alignItems = "center"
-  pin.style.justifyContent = "center"
+  const pill = document.createElement("div")
+  pill.style.display = "flex"
+  pill.style.alignItems = "center"
+  pill.style.gap = "2px"
+  pill.style.padding = "3px"
+  pill.style.background = "#ffffff"
+  pill.style.borderRadius = "999px"
 
-  const count = document.createElement("span")
-  count.textContent = String(colors.length)
-  count.style.width = "18px"
-  count.style.height = "18px"
-  count.style.borderRadius = "50%"
-  count.style.background = "#ffffff"
-  count.style.color = "#1f2937"
-  count.style.font = "700 11px/18px system-ui, sans-serif"
-  count.style.textAlign = "center"
-  pin.appendChild(count)
-  return pin
+  items.forEach(({ offering, color }) => {
+    const chip = document.createElement("span")
+    chip.style.width = "22px"
+    chip.style.height = "22px"
+    chip.style.borderRadius = "999px"
+    chip.style.background = color
+    chip.style.display = "flex"
+    chip.style.alignItems = "center"
+    chip.style.justifyContent = "center"
+    chip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${OFFERING_ICON_PATHS[offering]}</svg>`
+    pill.appendChild(chip)
+  })
+
+  // Small pointer under the pill so its tip sits on the exact map position.
+  const tail = document.createElement("div")
+  tail.style.width = "0"
+  tail.style.height = "0"
+  tail.style.marginTop = "-1px"
+  tail.style.borderLeft = "5px solid transparent"
+  tail.style.borderRight = "5px solid transparent"
+  tail.style.borderTop = "6px solid #ffffff"
+
+  wrapper.appendChild(pill)
+  wrapper.appendChild(tail)
+  return wrapper
 }
 
 function removeMarker(marker: any) {
@@ -147,7 +162,7 @@ export function MapView({
       let marker: any
 
       if (AdvancedMarkerElement) {
-        const pinElement = buildPinElement(colors)
+        const pinElement = buildPinElement(getPinItems(location))
         marker = new AdvancedMarkerElement({ map, position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
         pinElement.addEventListener("click", handleClick)
       } else {
