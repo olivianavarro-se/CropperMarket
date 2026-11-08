@@ -81,7 +81,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
       const matchesType = filters.type === "all" || supplier.supplier_type === filters.type
       const matchesInventory = !filters.hasInventory || (location.inventory && location.inventory.length > 0)
       const matchesDelivery =
-        !filters.deliveryAvailable || (location.inventory && location.inventory.some((item) => item.delivery_available))
+        !filters.deliveryAvailable || location.delivery_available
 
       const matchesZipCode = !filters.zipCode || location.zip_code?.includes(filters.zipCode)
 
@@ -100,7 +100,7 @@ export function HomeMapView({ locations, isAuthenticated = false, userId, userSu
             const matchesOtherCategory =
               filters.hayTypes.includes("Other") &&
               !filters.customHayType &&
-              !HAY_TYPES.filter((t) => t !== "Other").includes(item.product_name)
+              !HAY_TYPES.some((t) => t !== "Other" && t === item.product_name)
 
             return matchesSelectedTypes || matchesCustomType || matchesOtherCategory
           }))

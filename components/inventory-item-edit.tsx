@@ -17,9 +17,10 @@ import { X, Plus } from "lucide-react"
 interface InventoryItemEditProps {
   item: Inventory
   onCancel: () => void
+  onSave?: () => void
 }
 
-export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
+export function InventoryItemEdit({ item, onCancel, onSave }: InventoryItemEditProps) {
   const isCustomType = !HAY_TYPES.includes(item.product_name as any)
   const [hayType, setHayType] = useState<string>(isCustomType ? "Other" : item.product_name)
   const [customHayType, setCustomHayType] = useState(isCustomType ? item.product_name : "")
@@ -89,8 +90,12 @@ export function InventoryItemEdit({ item, onCancel }: InventoryItemEditProps) {
 
       if (error) throw error
 
-      router.refresh()
-      onCancel()
+      if (onSave) {
+        onSave()
+      } else {
+        router.refresh()
+        onCancel()
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {

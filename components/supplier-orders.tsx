@@ -284,8 +284,8 @@ export function SupplierOrders({ supplierId, userId }: SupplierOrdersProps) {
                       <CardTitle className="text-lg">
                         Order Request
                       </CardTitle>
-                      <Badge className={statusColors[order.status]}>
-                        {statusLabels[order.status]}
+                      <Badge className={statusColors[order.status as keyof typeof statusColors]}>
+                        {statusLabels[order.status as keyof typeof statusLabels]}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
