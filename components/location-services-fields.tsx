@@ -38,11 +38,11 @@ export function LocationServicesFields({ idPrefix, value, onChange }: LocationSe
 
   return (
     <fieldset className="flex flex-col gap-3 p-4 bg-card rounded-lg border">
-      <legend className="sr-only">Services at this location</legend>
+      <legend className="sr-only">Services offered from this location</legend>
       <div>
-        <p className="text-sm font-medium">Services at this location</p>
+        <p className="text-sm font-medium">Services offered from this location</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Buyers will see these on the map with your contact info so they can call you.
+          These show on this location&apos;s map pin, next to your hay, with your contact info so buyers can call you.
         </p>
       </div>
 

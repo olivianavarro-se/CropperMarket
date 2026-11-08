@@ -35,7 +35,8 @@ export default async function Home() {
   // Filter locations based on user visibility settings and inventory
   const locationsWithInventory = locationsData?.filter((location) => {
     const hasInventory = location.inventory && location.inventory.length > 0
-    if (!hasInventory && !location.offers_squeeze && !location.offers_transport) return false
+    // Squeeze and transport are add-ons of a farm, so a location only appears once it lists hay.
+    if (!hasInventory) return false
 
     const supplier = location.supplier
     if (!supplier) return false
