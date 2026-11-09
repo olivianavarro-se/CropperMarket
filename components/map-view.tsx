@@ -28,7 +28,12 @@ const OFFERING_ICON_PATHS: Record<Offering, string> = {
     '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
 }
 
-function buildPinElement(items: { offering: Offering; color: string }[]) {
+// Google Maps sets its own font (Roboto) on the map, so pins copy the page font explicitly.
+function appFontFamily() {
+  return getComputedStyle(document.body).fontFamily || "system-ui, sans-serif"
+}
+
+function buildPinElement(items: { offering: Offering; color: string }[], name: string) {
   const wrapper = document.createElement("div")
   wrapper.style.cursor = "pointer"
   wrapper.style.display = "flex"
@@ -56,6 +61,19 @@ function buildPinElement(items: { offering: Offering; color: string }[]) {
     chip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${OFFERING_ICON_PATHS[offering]}</svg>`
     pill.appendChild(chip)
   })
+
+  // Shown only at close zoom via the .show-pin-labels class on the map container (see globals.css).
+  const label = document.createElement("span")
+  label.setAttribute("data-pin-label", "")
+  label.textContent = name
+  label.style.padding = "0 8px 0 5px"
+  label.style.font = `600 12px ${appFontFamily()}`
+  label.style.color = "#1f2a22"
+  label.style.whiteSpace = "nowrap"
+  label.style.maxWidth = "160px"
+  label.style.overflow = "hidden"
+  label.style.textOverflow = "ellipsis"
+  pill.appendChild(label)
 
   // Small pointer under the pill so its tip sits on the exact map position.
   const tail = document.createElement("div")
@@ -94,7 +112,7 @@ function buildClusterElement(count: number) {
   el.style.display = "flex"
   el.style.alignItems = "center"
   el.style.justifyContent = "center"
-  el.style.font = `600 ${count >= 100 ? 12 : 13}px system-ui, sans-serif`
+  el.style.font = `600 ${count >= 100 ? 12 : 13}px ${appFontFamily()}`
   el.style.cursor = "pointer"
   el.style.transition = "transform 120ms ease"
   el.addEventListener("mouseenter", () => (el.style.transform = "scale(1.08)"))
@@ -192,6 +210,15 @@ export function MapView({
 
   useEffect(() => {
     if (!map || !mapsLoaded) return
+    const container = map.getDiv() as HTMLElement
+    const sync = () => container.classList.toggle("show-pin-labels", (map.getZoom() ?? 0) > CLUSTER_MAX_ZOOM)
+    sync()
+    const listener = map.addListener("zoom_changed", sync)
+    return () => listener.remove()
+  }, [map, mapsLoaded])
+
+  useEffect(() => {
+    if (!map || !mapsLoaded) return
 
     const visibleIds = new Set<string>()
     const useAdvanced = !!(mapId && (window.google.maps as any).marker?.AdvancedMarkerElement)
@@ -205,10 +232,18 @@ export function MapView({
         renderer: createClusterRenderer(useAdvanced),
         onClusterClick: (_event, cluster, clusterMap) => {
           hasUserInteracted.current = true
-          if (cluster.bounds) clusterMap.fitBounds(cluster.bounds, 80)
-          // Locations at the same address never split apart, so jump straight to individual pins.
-          const zoom = clusterMap.getZoom() ?? 0
-          if (zoom <= CLUSTER_MAX_ZOOM) clusterMap.setZoom(Math.max(zoom, CLUSTER_MAX_ZOOM + 1))
+          const bounds = cluster.bounds
+          if (!bounds) return
+          const ne = bounds.getNorthEast()
+          const sw = bounds.getSouthWest()
+          const isTight = Math.abs(ne.lat() - sw.lat()) < 0.005 && Math.abs(ne.lng() - sw.lng()) < 0.005
+          if (isTight) {
+            // Locations at (nearly) the same address never split apart, so jump straight to individual pins.
+            clusterMap.setCenter(bounds.getCenter())
+            clusterMap.setZoom(CLUSTER_MAX_ZOOM + 2)
+          } else {
+            clusterMap.fitBounds(bounds, 80)
+          }
         },
       })
     }
@@ -240,7 +275,7 @@ export function MapView({
 
       if (useAdvanced) {
         const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
-        const pinElement = buildPinElement(getPinItems(location))
+        const pinElement = buildPinElement(getPinItems(location), location.supplier.business_name)
         marker = new AdvancedMarkerElement({ position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
         pinElement.addEventListener("click", handleClick)
       } else {

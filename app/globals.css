@@ -167,3 +167,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Map pin name labels: hidden until the map is zoomed in past clustering. */
+[data-pin-label] {
+  display: none;
+}
+.show-pin-labels [data-pin-label] {
+  display: inline-block;
+}
