@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { cookies } from "next/headers"
-import { getErrorMessage } from "@/lib/utils"
 
 export async function deleteAccount() {
   const supabase = await createClient()
@@ -60,8 +59,8 @@ export async function deleteAccount() {
     })
 
     return { success: true }
-  } catch (error) {
+  } catch (error: any) {
     console.error("Delete account error:", error)
-    return { success: false, error: getErrorMessage(error, "Failed to delete account") }
+    return { success: false, error: error.message || "Failed to delete account" }
   }
 }

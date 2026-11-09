@@ -72,7 +72,7 @@ function ForgotPasswordContent() {
             <CardHeader className="pb-0.5 space-y-0 pt-3 px-4">
               <CardTitle className="text-lg text-[#65411C] font-bold mb-0">Reset Password</CardTitle>
               <CardDescription className="text-[#8A6842] text-sm">
-                Enter your email address and we&apos;ll send you a link to reset your password
+                Enter your email address and we'll send you a link to reset your password
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2 pb-3 px-4">
