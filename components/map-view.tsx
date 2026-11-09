@@ -5,6 +5,7 @@ import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from "@googlema
 import { LocationCard } from "@/components/location-card"
 import type { LocationWithSupplier } from "@/lib/types"
 import { getPinColors, getPinItems, type Offering } from "@/lib/location-services"
+import { isDesktopViewport } from "@/lib/breakpoints"
 
 interface MapViewProps {
   locations: LocationWithSupplier[]
@@ -106,9 +107,9 @@ const SELECTED_ZOOM = CLUSTER_MAX_ZOOM + 2
 function focusOnLocation(map: any, position: { lat: number; lng: number }) {
   map.setZoom(SELECTED_ZOOM)
   map.setCenter(position)
-  if (window.innerWidth < 768) {
+  if (!isDesktopViewport()) {
     const mapHeight = (map.getDiv() as HTMLElement).clientHeight
-    map.panBy(0, mapHeight * 0.3)
+    map.panBy(0, mapHeight * 0.32)
     return
   }
   const panelWidth = window.innerWidth >= 1024 ? 420 : 380
@@ -440,6 +441,12 @@ export function MapView({
         const mapOptions: any = {
           center: initialCenter,
           zoom: initialZoom,
+          streetViewControlOptions: {
+            // The desktop detail panel covers the right edge of the map, so keep the control on the left there.
+        position: isDesktopViewport()
+          ? window.google.maps.ControlPosition.LEFT_TOP
+          : window.google.maps.ControlPosition.RIGHT_TOP,
+          },
         }
 
         if (mapId) {
@@ -653,7 +660,7 @@ export function MapView({
       <div id="map" className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute inset-x-3 top-[40%] bottom-16 sm:inset-x-4 md:inset-x-auto md:top-4 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
+        <div className="absolute inset-x-3 top-[35%] bottom-8 sm:inset-x-4 md:inset-x-auto md:top-16 md:bottom-4 md:right-4 md:w-[380px] md:lg:w-[420px] overflow-y-auto z-10 rounded-xl">
         <LocationCard
           location={selectedLocation}
           onClose={() => onLocationSelect?.(null)}
