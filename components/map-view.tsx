@@ -440,6 +440,9 @@ export function MapView({
         const mapOptions: any = {
           center: initialCenter,
           zoom: initialZoom,
+          streetViewControlOptions: {
+            position: window.google.maps.ControlPosition.RIGHT_TOP,
+          },
         }
 
         if (mapId) {
@@ -653,7 +656,7 @@ export function MapView({
       <div id="map" className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute inset-x-3 top-[40%] bottom-16 sm:inset-x-4 md:inset-x-auto md:top-16 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
+        <div className="absolute inset-x-3 top-[40%] bottom-8 sm:inset-x-4 md:inset-x-auto md:top-16 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
         <LocationCard
           location={selectedLocation}
           onClose={() => onLocationSelect?.(null)}
