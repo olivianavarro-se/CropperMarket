@@ -92,6 +92,17 @@ function buildPinElement(items: { offering: Offering; color: string }[], name: s
 const CLUSTER_INK = "#1f2a22"
 // Beyond this zoom, pins are always shown individually.
 const CLUSTER_MAX_ZOOM = 13
+// Past the clustering level, so a selected farm always shows as its own pin with its name.
+const SELECTED_ZOOM = CLUSTER_MAX_ZOOM + 2
+
+// On desktop the details panel covers the right side of the map, so shift the view to keep the pin beside it.
+function focusOnLocation(map: any, position: { lat: number; lng: number }) {
+  map.setZoom(SELECTED_ZOOM)
+  map.setCenter(position)
+  if (window.innerWidth < 768) return
+  const panelWidth = window.innerWidth >= 1024 ? 420 : 380
+  map.panBy((panelWidth + 16) / 2, 0)
+}
 
 function clusterSize(count: number) {
   if (count >= 50) return 52
@@ -267,8 +278,7 @@ export function MapView({
       const handleClick = () => {
         hasUserInteracted.current = true
         onLocationSelectRef.current?.(location)
-        map.panTo(position)
-        map.setZoom(13)
+        focusOnLocation(map, position)
       }
 
       let marker: any
@@ -474,8 +484,7 @@ export function MapView({
     if (lat && lng) {
       hasUserInteracted.current = true
       try {
-        map.panTo({ lat, lng })
-        map.setZoom(13)
+        focusOnLocation(map, { lat, lng })
       } catch (error) {
         console.error("Map pan error:", error)
       }

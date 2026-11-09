@@ -66,6 +66,17 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
     })
   }, [location.inventory, activeFilters])
 
+  // Always list every hay type the farm has; when filters narrow things down, matches go first and get a tag.
+  const isNarrowed = filteredInventory.length < location.inventory.length
+  const matchedIds = useMemo(() => new Set(filteredInventory.map((item) => item.id)), [filteredInventory])
+  const displayedInventory = useMemo(
+    () =>
+      isNarrowed
+        ? [...location.inventory].sort((a, b) => Number(matchedIds.has(b.id)) - Number(matchedIds.has(a.id)))
+        : location.inventory,
+    [location.inventory, matchedIds, isNarrowed],
+  )
+
   const handleContactClick = () => {
     if (!isAuthenticated) {
       router.push("/auth/login")
@@ -214,15 +225,32 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
             )}
           </div>
 
-          {filteredInventory.length > 0 ? (
+          {isNarrowed && (
+            <p className="text-[11px] text-muted-foreground mb-2">
+              {filteredInventory.length} of {location.inventory.length} match your filters
+            </p>
+          )}
+
+          {displayedInventory.length > 0 ? (
             <div className="space-y-1.5 md:space-y-2">
-              {filteredInventory.map((item) => (
+              {displayedInventory.map((item) => {
+                const isMatch = isNarrowed && matchedIds.has(item.id)
+                return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-2 md:p-2.5 bg-muted/50 rounded-lg border border-border hover:shadow-sm transition-shadow"
+                  className={`flex items-center justify-between p-2 md:p-2.5 rounded-lg border hover:shadow-sm transition-shadow ${
+                    isMatch ? "bg-hay-gold/10 border-hay-gold/50" : "bg-muted/50 border-border"
+                  }`}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-medium text-xs md:text-sm truncate">{item.product_name}</span>
+                      {isMatch && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-hay-gold/60 text-hay-dark">
+                          Matches filter
+                        </Badge>
+                      )}
+                    </div>
                     {item.description && (
                           <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
                             {item.description}
@@ -250,12 +278,11 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                     )}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">
-              {location.inventory.length > 0 ? "No items match filters" : "No inventory listed"}
-            </p>
+            <p className="text-xs text-muted-foreground">No inventory listed</p>
           )}
         </div>
         )}
