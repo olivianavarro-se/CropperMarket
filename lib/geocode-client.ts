@@ -31,17 +31,13 @@ export async function geocodeAddressClient(
     }
 
     const fullAddress = `${address}, ${city}, ${state} ${zipCode}`
-    console.log("[v0] Client-side geocoding:", fullAddress)
 
     const geocoder = new window.google.maps.Geocoder()
 
     return new Promise((resolve) => {
       geocoder.geocode({ address: fullAddress }, (results: any, status: string) => {
-        console.log("[v0] Geocoding response:", { status, results })
-
         if (status === "OK" && results && results[0]) {
           if (results[0].partial_match) {
-            console.log("[v0] Geocoding rejected: partial match detected")
             resolve({
               success: false,
               latitude: null,
@@ -82,19 +78,12 @@ export async function geocodeAddressClient(
           const stateMatches = formattedState.toLowerCase() === state.toLowerCase()
           const zipMatches = formattedZip === zipCode
 
-          console.log("[v0] Address component validation:", {
-            userEntered: { city, state, zipCode },
-            googleFound: { city: formattedCity, state: formattedState, zipCode: formattedZip },
-            matches: { cityMatches, stateMatches, zipMatches },
-          })
-
           if (!cityMatches || !stateMatches || !zipMatches) {
             const mismatches = []
             if (!cityMatches) mismatches.push(`city (found: ${formattedCity})`)
             if (!stateMatches) mismatches.push(`state (found: ${formattedState})`)
             if (!zipMatches) mismatches.push(`ZIP code (found: ${formattedZip})`)
 
-            console.log("[v0] Geocoding rejected: address component mismatch")
             resolve({
               success: false,
               latitude: null,
@@ -103,15 +92,6 @@ export async function geocodeAddressClient(
             })
             return
           }
-
-          console.log("[v0] Geocoding successful with formatted address:", {
-            lat,
-            lng,
-            street: street.trim(),
-            city: formattedCity,
-            state: formattedState,
-            zipCode: formattedZip,
-          })
 
           resolve({
             success: true,
@@ -125,7 +105,6 @@ export async function geocodeAddressClient(
             },
           })
         } else {
-          console.log("[v0] Geocoding failed:", status)
           resolve({
             success: false,
             latitude: null,
@@ -136,7 +115,7 @@ export async function geocodeAddressClient(
       })
     })
   } catch (error) {
-    console.error("[v0] Geocoding error:", error)
+    console.error("Geocoding error:", error)
     return {
       success: false,
       latitude: null,
