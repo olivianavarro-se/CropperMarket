@@ -84,7 +84,72 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [duplicateLocation, setDuplicateLocation] = useState<LocationWithInventory | null>(null)
   const router = useRouter()
+
+  const normalizeAddressPart = (value: string | null | undefined) =>
+    (value || "")
+      .toLowerCase()
+      .replace(/[.,#]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+
+  const findDuplicateLocation = (
+    street: string,
+    cityValue: string,
+    stateValue: string,
+    zipValue: string,
+    excludeId?: string,
+  ) => {
+    const street_ = normalizeAddressPart(street)
+    const city_ = normalizeAddressPart(cityValue)
+    const state_ = normalizeAddressPart(stateValue)
+    const zip_ = normalizeAddressPart(zipValue).slice(0, 5)
+
+    return (
+      locations.find((loc) => {
+        if (loc.id === excludeId) return false
+        if (normalizeAddressPart(loc.address) !== street_) return false
+        const locZip = normalizeAddressPart(loc.zip_code).slice(0, 5)
+        if (zip_ && locZip) return zip_ === locZip
+        return normalizeAddressPart(loc.city) === city_ && normalizeAddressPart(loc.state) === state_
+      }) || null
+    )
+  }
+
+  const goToDuplicateLocation = (location: LocationWithInventory) => {
+    setIsAddingLocation(false)
+    resetLocationForm()
+    setDuplicateLocation(null)
+    setExpandedLocations((prev) => new Set(prev).add(location.id))
+    startEditingLocation(location)
+    requestAnimationFrame(() => {
+      document.getElementById(`location-${location.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })
+    })
+  }
+
+  const renderDuplicateNotice = () =>
+    duplicateLocation && (
+      <div className="flex flex-col gap-3 rounded-md border border-primary/30 bg-primary/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+          <p className="text-sm text-foreground text-pretty">
+            {"You already have a location at this address: "}
+            <span className="font-semibold">{duplicateLocation.name}</span>
+            {". Go to that location and edit it if needed."}
+          </p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="shrink-0 bg-transparent"
+          onClick={() => goToDuplicateLocation(duplicateLocation)}
+        >
+          {`Edit ${duplicateLocation.name}`}
+        </Button>
+      </div>
+    )
 
   const toggleLocation = (locationId: string) => {
     setExpandedLocations((prev) => {
@@ -106,6 +171,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setZipCode("")
     setServices(EMPTY_SERVICES)
     setError(null)
+    setDuplicateLocation(null)
   }
 
   const startEditingLocation = (location: LocationWithInventory) => {
@@ -134,12 +200,14 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     setEditZipCode("")
     setEditDeliveryAvailable(false)
     setError(null)
+    setDuplicateLocation(null)
   }
 
   const handleUpdateLocation = async (e: React.FormEvent, locationId: string) => {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setDuplicateLocation(null)
 
     const supabase = createClient()
 
@@ -170,6 +238,13 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
         finalCity = result.formattedAddress.city
         finalState = result.formattedAddress.state
         finalZipCode = result.formattedAddress.zipCode
+      }
+
+      const editDuplicate = findDuplicateLocation(finalAddress, finalCity, finalState, finalZipCode, locationId)
+      if (editDuplicate) {
+        setDuplicateLocation(editDuplicate)
+        setIsLoading(false)
+        return
       }
 
       const { error } = await supabase
@@ -212,10 +287,18 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
     e.preventDefault()
     setIsLoading(true)
     setError(null)
+    setDuplicateLocation(null)
 
     const supabase = createClient()
 
     try {
+      const inputDuplicate = findDuplicateLocation(address, city, state, zipCode)
+      if (inputDuplicate) {
+        setDuplicateLocation(inputDuplicate)
+        setIsLoading(false)
+        return
+      }
+
       // Geocode the address
       const mapsLoaded = await waitForGoogleMaps()
       if (!mapsLoaded) {
@@ -242,6 +325,13 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
         finalCity = result.formattedAddress.city
         finalState = result.formattedAddress.state
         finalZipCode = result.formattedAddress.zipCode
+      }
+
+      const geocodedDuplicate = findDuplicateLocation(finalAddress, finalCity, finalState, finalZipCode)
+      if (geocodedDuplicate) {
+        setDuplicateLocation(geocodedDuplicate)
+        setIsLoading(false)
+        return
       }
 
       const { error } = await supabase.from("locations").insert({
@@ -444,6 +534,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
 
               <LocationServicesFields idPrefix="new" value={services} onChange={setServices} />
 
+              {renderDuplicateNotice()}
+
               {error && (
                 <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
                   <p className="text-sm text-destructive">{error}</p>
@@ -474,7 +566,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
       {locations.length > 0 ? (
         <div className="grid gap-4">
           {locations.map((location) => (
-            <Card key={location.id} className="overflow-hidden">
+            <Card key={location.id} id={`location-${location.id}`} className="overflow-hidden scroll-mt-24">
               {editingLocationId === location.id ? (
                 // Edit Location Form
                 <div className="p-6 bg-muted/30">
@@ -554,6 +646,8 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                     </div>
 
                     <LocationServicesFields idPrefix="edit" value={editServices} onChange={setEditServices} />
+
+                    {renderDuplicateNotice()}
 
                     {error && (
                       <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3">
