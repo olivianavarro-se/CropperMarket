@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from "@googlemaps/markerclusterer"
 import { LocationCard } from "@/components/location-card"
 import type { LocationWithSupplier } from "@/lib/types"
 import { getPinColors, getPinItems, type Offering } from "@/lib/location-services"
@@ -70,6 +71,65 @@ function buildPinElement(items: { offering: Offering; color: string }[]) {
   return wrapper
 }
 
+const CLUSTER_INK = "#1f2a22"
+// Beyond this zoom, pins are always shown individually.
+const CLUSTER_MAX_ZOOM = 13
+
+function clusterSize(count: number) {
+  if (count >= 50) return 52
+  if (count >= 10) return 44
+  return 36
+}
+
+function buildClusterElement(count: number) {
+  const size = clusterSize(count)
+  const el = document.createElement("div")
+  el.style.width = `${size}px`
+  el.style.height = `${size}px`
+  el.style.borderRadius = "999px"
+  el.style.background = CLUSTER_INK
+  el.style.color = "#ffffff"
+  el.style.border = "3px solid #ffffff"
+  el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.25)"
+  el.style.display = "flex"
+  el.style.alignItems = "center"
+  el.style.justifyContent = "center"
+  el.style.font = `600 ${count >= 100 ? 12 : 13}px system-ui, sans-serif`
+  el.style.cursor = "pointer"
+  el.style.transition = "transform 120ms ease"
+  el.addEventListener("mouseenter", () => (el.style.transform = "scale(1.08)"))
+  el.addEventListener("mouseleave", () => (el.style.transform = "scale(1)"))
+  el.textContent = String(count)
+  return el
+}
+
+function createClusterRenderer(useAdvanced: boolean): Renderer {
+  return {
+    render: ({ count, position }) => {
+      const title = `${count} locations, click to zoom in`
+      const zIndex = 1000 + count
+      if (useAdvanced) {
+        const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
+        return new AdvancedMarkerElement({ position, title, zIndex, content: buildClusterElement(count) })
+      }
+      return new window.google.maps.Marker({
+        position,
+        title,
+        zIndex,
+        label: { text: String(count), color: "#ffffff", fontSize: "13px", fontWeight: "600" },
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: CLUSTER_INK,
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 3,
+          scale: clusterSize(count) / 2,
+        },
+      })
+    },
+  }
+}
+
 function removeMarker(marker: any) {
   if (typeof marker.setMap === "function") marker.setMap(null)
   else marker.map = null
@@ -89,6 +149,7 @@ export function MapView({
   const [mapsLoaded, setMapsLoaded] = useState(false)
   const [mapsError, setMapsError] = useState<string | null>(null)
   const markersRef = useRef<Map<string, any>>(new Map())
+  const clustererRef = useRef<MarkerClusterer | null>(null)
   const onLocationSelectRef = useRef(onLocationSelect)
   const hasUserInteracted = useRef(false)
   const prevUserLocation = useRef<{ lat: number; lng: number } | null>(null)
@@ -133,9 +194,26 @@ export function MapView({
     if (!map || !mapsLoaded) return
 
     const visibleIds = new Set<string>()
+    const useAdvanced = !!(mapId && (window.google.maps as any).marker?.AdvancedMarkerElement)
 
     // Google Maps can throw (e.g. when the key rejects the site's address); keep the rest of the page alive.
     try {
+    if (!clustererRef.current) {
+      clustererRef.current = new MarkerClusterer({
+        map,
+        algorithm: new SuperClusterAlgorithm({ radius: 70, maxZoom: CLUSTER_MAX_ZOOM }),
+        renderer: createClusterRenderer(useAdvanced),
+        onClusterClick: (_event, cluster, clusterMap) => {
+          hasUserInteracted.current = true
+          if (cluster.bounds) clusterMap.fitBounds(cluster.bounds, 80)
+          // Locations at the same address never split apart, so jump straight to individual pins.
+          const zoom = clusterMap.getZoom() ?? 0
+          if (zoom <= CLUSTER_MAX_ZOOM) clusterMap.setZoom(Math.max(zoom, CLUSTER_MAX_ZOOM + 1))
+        },
+      })
+    }
+    const clusterer = clustererRef.current
+
     locations.forEach((location) => {
       const hasLatLng = !!(location.latitude && location.longitude)
       const colors = getPinColors(location)
@@ -158,16 +236,15 @@ export function MapView({
         map.setZoom(13)
       }
 
-      const AdvancedMarkerElement = mapId ? (window.google.maps as any).marker?.AdvancedMarkerElement : null
       let marker: any
 
-      if (AdvancedMarkerElement) {
+      if (useAdvanced) {
+        const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
         const pinElement = buildPinElement(getPinItems(location))
-        marker = new AdvancedMarkerElement({ map, position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
+        marker = new AdvancedMarkerElement({ position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
         pinElement.addEventListener("click", handleClick)
       } else {
         marker = new window.google.maps.Marker({
-          map,
           position,
           title,
           zIndex: isMulti ? 2 : 1,
@@ -187,13 +264,17 @@ export function MapView({
       }
 
       markersRef.current.set(id, marker)
+      clusterer.addMarker(marker, true)
     })
 
     markersRef.current.forEach((marker, id) => {
       if (visibleIds.has(id)) return
+      clusterer.removeMarker(marker, true)
       removeMarker(marker)
       markersRef.current.delete(id)
     })
+
+    clusterer.render()
     } catch (error) {
       console.error("Map markers error:", error)
     }
@@ -202,6 +283,11 @@ export function MapView({
   useEffect(() => {
     const markers = markersRef.current
     return () => {
+      try {
+        clustererRef.current?.clearMarkers()
+        ;(clustererRef.current as any)?.setMap?.(null)
+      } catch {}
+      clustererRef.current = null
       markers.forEach((marker) => {
         try {
           removeMarker(marker)
