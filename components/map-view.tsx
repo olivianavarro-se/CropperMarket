@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { MarkerClusterer, SuperClusterAlgorithm, type Renderer } from "@googlemaps/markerclusterer"
 import { LocationCard } from "@/components/location-card"
 import type { LocationWithSupplier } from "@/lib/types"
+import { getPinColors, getPinItems, type Offering } from "@/lib/location-services"
 
 interface MapViewProps {
   locations: LocationWithSupplier[]
@@ -16,6 +18,182 @@ interface MapViewProps {
 }
 
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 } // Geographic center of United States
+
+// Lucide icon paths (wheat, package, truck), inlined because map pins are plain DOM, not React.
+const OFFERING_ICON_PATHS: Record<Offering, string> = {
+  hay: '<path d="M2 22 16 8"/><path d="M3.47 12.53 5 11l1.53 1.53a3.5 3.5 0 0 1 0 4.94L5 19l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M7.47 8.53 9 7l1.53 1.53a3.5 3.5 0 0 1 0 4.94L9 15l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M11.47 4.53 13 3l1.53 1.53a3.5 3.5 0 0 1 0 4.94L13 11l-1.53-1.53a3.5 3.5 0 0 1 0-4.94Z"/><path d="M20 2h2v2a4 4 0 0 1-4 4h-2V6a4 4 0 0 1 4-4Z"/><path d="M11.47 17.47 13 19l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L5 19l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M15.47 13.47 17 15l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L9 15l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/><path d="M19.47 9.47 21 11l-1.53 1.53a3.5 3.5 0 0 1-4.94 0L13 11l1.53-1.53a3.5 3.5 0 0 1 4.94 0Z"/>',
+  squeeze:
+    '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/>',
+  transport:
+    '<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+}
+
+// Google Maps sets its own font (Roboto) on the map, so pins copy the page font explicitly.
+function appFontFamily() {
+  return getComputedStyle(document.body).fontFamily || "system-ui, sans-serif"
+}
+
+function buildPinElement(items: { offering: Offering; color: string }[], name: string) {
+  const wrapper = document.createElement("div")
+  wrapper.style.cursor = "pointer"
+  wrapper.style.display = "flex"
+  wrapper.style.flexDirection = "column"
+  wrapper.style.alignItems = "center"
+  wrapper.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
+
+  wrapper.style.transition = "transform 150ms ease"
+  wrapper.style.transformOrigin = "bottom center"
+
+  const pill = document.createElement("div")
+  pill.setAttribute("data-pin-pill", "")
+  pill.style.border = "2px solid #ffffff"
+  pill.style.transition = "border-color 150ms ease, box-shadow 150ms ease"
+  pill.style.display = "flex"
+  pill.style.alignItems = "center"
+  pill.style.gap = "2px"
+  pill.style.padding = "3px"
+  pill.style.background = "#ffffff"
+  pill.style.borderRadius = "999px"
+
+  items.forEach(({ offering, color }) => {
+    const chip = document.createElement("span")
+    chip.style.width = "22px"
+    chip.style.height = "22px"
+    chip.style.borderRadius = "999px"
+    chip.style.background = color
+    chip.style.display = "flex"
+    chip.style.alignItems = "center"
+    chip.style.justifyContent = "center"
+    chip.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${OFFERING_ICON_PATHS[offering]}</svg>`
+    pill.appendChild(chip)
+  })
+
+  // Shown only at close zoom via the .show-pin-labels class on the map container (see globals.css).
+  const label = document.createElement("span")
+  label.setAttribute("data-pin-label", "")
+  label.textContent = name
+  label.style.padding = "0 8px 0 5px"
+  label.style.font = `600 12px ${appFontFamily()}`
+  label.style.color = "#1f2a22"
+  label.style.whiteSpace = "nowrap"
+  label.style.maxWidth = "160px"
+  label.style.overflow = "hidden"
+  label.style.textOverflow = "ellipsis"
+  pill.appendChild(label)
+
+  // Small pointer under the pill so its tip sits on the exact map position.
+  const tail = document.createElement("div")
+  tail.style.width = "0"
+  tail.style.height = "0"
+  tail.style.marginTop = "-1px"
+  tail.style.borderLeft = "5px solid transparent"
+  tail.style.borderRight = "5px solid transparent"
+  tail.style.borderTop = "6px solid #ffffff"
+
+  wrapper.appendChild(pill)
+  wrapper.appendChild(tail)
+  return wrapper
+}
+
+const CLUSTER_INK = "#1f2a22"
+// Beyond this zoom, pins are always shown individually.
+const CLUSTER_MAX_ZOOM = 13
+// Past the clustering level, so a selected farm always shows as its own pin with its name.
+const SELECTED_ZOOM = CLUSTER_MAX_ZOOM + 2
+
+// The details panel covers part of the map (bottom 60% on mobile, right side on desktop),
+// so shift the view to keep the pin in the visible area.
+function focusOnLocation(map: any, position: { lat: number; lng: number }) {
+  map.setZoom(SELECTED_ZOOM)
+  map.setCenter(position)
+  if (window.innerWidth < 768) {
+    const mapHeight = (map.getDiv() as HTMLElement).clientHeight
+    map.panBy(0, mapHeight * 0.3)
+    return
+  }
+  const panelWidth = window.innerWidth >= 1024 ? 420 : 380
+  map.panBy((panelWidth + 16) / 2, 0)
+}
+
+function clusterSize(count: number) {
+  if (count >= 50) return 52
+  if (count >= 10) return 44
+  return 36
+}
+
+function buildClusterElement(count: number) {
+  const size = clusterSize(count)
+  const el = document.createElement("div")
+  el.style.width = `${size}px`
+  el.style.height = `${size}px`
+  el.style.borderRadius = "999px"
+  el.style.background = CLUSTER_INK
+  el.style.color = "#ffffff"
+  el.style.border = "3px solid #ffffff"
+  el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.25)"
+  el.style.display = "flex"
+  el.style.alignItems = "center"
+  el.style.justifyContent = "center"
+  el.style.font = `600 ${count >= 100 ? 12 : 13}px ${appFontFamily()}`
+  el.style.cursor = "pointer"
+  el.style.transition = "transform 120ms ease"
+  el.addEventListener("mouseenter", () => (el.style.transform = "scale(1.08)"))
+  el.addEventListener("mouseleave", () => (el.style.transform = "scale(1)"))
+  el.textContent = String(count)
+  return el
+}
+
+function createClusterRenderer(useAdvanced: boolean): Renderer {
+  return {
+    render: ({ count, position }) => {
+      const title = `${count} locations, click to zoom in`
+      const zIndex = 1000 + count
+      if (useAdvanced) {
+        const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
+        return new AdvancedMarkerElement({ position, title, zIndex, content: buildClusterElement(count) })
+      }
+      return new window.google.maps.Marker({
+        position,
+        title,
+        zIndex,
+        label: { text: String(count), color: "#ffffff", fontSize: "13px", fontWeight: "600" },
+        icon: {
+          path: window.google.maps.SymbolPath.CIRCLE,
+          fillColor: CLUSTER_INK,
+          fillOpacity: 1,
+          strokeColor: "#ffffff",
+          strokeWeight: 3,
+          scale: clusterSize(count) / 2,
+        },
+      })
+    },
+  }
+}
+
+// Matches the app's --primary golden-hay token.
+const SELECTED_GOLD = "#E3A33B"
+const SELECTED_HALO = "0 0 0 4px rgba(227, 163, 59, 0.3), 0 4px 12px rgba(120, 80, 20, 0.25)"
+
+// Selected farm: golden outline with a soft halo, slightly larger, name always visible, drawn above nearby pins.
+function setPinSelected(marker: any, selected: boolean) {
+  const baseZ = marker.__baseZIndex ?? 1
+  const wrapper = marker.__pinElement as HTMLElement | undefined
+  if (wrapper) {
+    wrapper.style.transform = selected ? "scale(1.15)" : "scale(1)"
+    wrapper.toggleAttribute("data-pin-selected", selected)
+    const pill = wrapper.querySelector<HTMLElement>("[data-pin-pill]")
+    const tail = wrapper.lastElementChild as HTMLElement | null
+    if (pill) {
+      if (pill.dataset.baseShadow === undefined) pill.dataset.baseShadow = pill.style.boxShadow
+      pill.style.borderColor = selected ? SELECTED_GOLD : "#ffffff"
+      pill.style.boxShadow = selected ? SELECTED_HALO : pill.dataset.baseShadow
+    }
+    if (tail) tail.style.borderTopColor = selected ? SELECTED_GOLD : "#ffffff"
+    marker.zIndex = selected ? 5000 : baseZ
+  } else if (typeof marker.setZIndex === "function") {
+    marker.setZIndex(selected ? 5000 : baseZ)
+  }
+}
 
 function removeMarker(marker: any) {
   if (typeof marker.setMap === "function") marker.setMap(null)
@@ -36,7 +214,9 @@ export function MapView({
   const [mapsLoaded, setMapsLoaded] = useState(false)
   const [mapsError, setMapsError] = useState<string | null>(null)
   const markersRef = useRef<Map<string, any>>(new Map())
+  const clustererRef = useRef<MarkerClusterer | null>(null)
   const onLocationSelectRef = useRef(onLocationSelect)
+  const selectedIdRef = useRef<string | null>(selectedLocation?.id ?? null)
   const hasUserInteracted = useRef(false)
   const prevUserLocation = useRef<{ lat: number; lng: number } | null>(null)
   const prevFiltersActive = useRef(false)
@@ -78,69 +258,109 @@ export function MapView({
 
   useEffect(() => {
     if (!map || !mapsLoaded) return
+    const container = map.getDiv() as HTMLElement
+    const sync = () => container.classList.toggle("show-pin-labels", (map.getZoom() ?? 0) > CLUSTER_MAX_ZOOM)
+    sync()
+    const listener = map.addListener("zoom_changed", sync)
+    return () => listener.remove()
+  }, [map, mapsLoaded])
+
+  useEffect(() => {
+    if (!map || !mapsLoaded) return
 
     const visibleIds = new Set<string>()
+    const useAdvanced = !!(mapId && (window.google.maps as any).marker?.AdvancedMarkerElement)
 
     // Google Maps can throw (e.g. when the key rejects the site's address); keep the rest of the page alive.
     try {
+    if (!clustererRef.current) {
+      clustererRef.current = new MarkerClusterer({
+        map,
+        algorithm: new SuperClusterAlgorithm({ radius: 70, maxZoom: CLUSTER_MAX_ZOOM }),
+        renderer: createClusterRenderer(useAdvanced),
+        onClusterClick: (_event, cluster, clusterMap) => {
+          hasUserInteracted.current = true
+          const bounds = cluster.bounds
+          if (!bounds) return
+          const ne = bounds.getNorthEast()
+          const sw = bounds.getSouthWest()
+          const isTight = Math.abs(ne.lat() - sw.lat()) < 0.005 && Math.abs(ne.lng() - sw.lng()) < 0.005
+          if (isTight) {
+            // Locations at (nearly) the same address never split apart, so jump straight to individual pins.
+            clusterMap.setCenter(bounds.getCenter())
+            clusterMap.setZoom(CLUSTER_MAX_ZOOM + 2)
+          } else {
+            clusterMap.fitBounds(bounds, 80)
+          }
+        },
+      })
+    }
+    const clusterer = clustererRef.current
+
     locations.forEach((location) => {
       const hasLatLng = !!(location.latitude && location.longitude)
-      const hasInventory = location.inventory && location.inventory.length > 0
-      if (!hasLatLng || !hasInventory) return
+      const colors = getPinColors(location)
+      if (!hasLatLng || colors.length === 0) return
 
-      const id = String(location.id)
+      // Including the colors in the key rebuilds the pin when a location's services change.
+      const id = `${location.id}:${colors.join(",")}`
       visibleIds.add(id)
       if (markersRef.current.has(id)) return
 
       const position = { lat: Number(location.latitude), lng: Number(location.longitude) }
-      const color = location.supplier.supplier_type === "broker" ? "#ca8a04" : "#16a34a"
-      const title = `${location.supplier.business_name} - ${location.name}`
+      const isMulti = colors.length > 1
+      const title = `${location.supplier.business_name} - ${location.name}${
+        isMulti ? ` (${colors.length} offerings)` : ""
+      }`
       const handleClick = () => {
         hasUserInteracted.current = true
         onLocationSelectRef.current?.(location)
-        map.panTo(position)
-        map.setZoom(13)
+        focusOnLocation(map, position)
       }
 
-      const AdvancedMarkerElement = mapId ? (window.google.maps as any).marker?.AdvancedMarkerElement : null
       let marker: any
 
-      if (AdvancedMarkerElement) {
-        const pinElement = document.createElement("div")
-        pinElement.style.width = "20px"
-        pinElement.style.height = "20px"
-        pinElement.style.borderRadius = "50%"
-        pinElement.style.backgroundColor = color
-        pinElement.style.border = "3px solid #ffffff"
-        pinElement.style.cursor = "pointer"
-
-        marker = new AdvancedMarkerElement({ map, position, title, content: pinElement })
+      if (useAdvanced) {
+        const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
+        const pinElement = buildPinElement(getPinItems(location), location.supplier.business_name)
+        marker = new AdvancedMarkerElement({ position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
+        marker.__pinElement = pinElement
         pinElement.addEventListener("click", handleClick)
       } else {
         marker = new window.google.maps.Marker({
-          map,
           position,
           title,
+          zIndex: isMulti ? 2 : 1,
+          label: isMulti
+            ? { text: String(colors.length), color: "#ffffff", fontSize: "11px", fontWeight: "700" }
+            : undefined,
           icon: {
             path: window.google.maps.SymbolPath.CIRCLE,
-            fillColor: color,
+            fillColor: colors[0],
             fillOpacity: 1,
-            strokeColor: "#ffffff",
+            strokeColor: isMulti ? colors[1] : "#ffffff",
             strokeWeight: 3,
-            scale: 10,
+            scale: isMulti ? 13 : 10,
           },
         })
         marker.addListener("click", handleClick)
       }
 
+      marker.__baseZIndex = isMulti ? 2 : 1
+      marker.__locationId = location.id
+      if (location.id === selectedIdRef.current) setPinSelected(marker, true)
       markersRef.current.set(id, marker)
+      clusterer.addMarker(marker, true)
     })
 
     markersRef.current.forEach((marker, id) => {
       if (visibleIds.has(id)) return
+      clusterer.removeMarker(marker, true)
       removeMarker(marker)
       markersRef.current.delete(id)
     })
+
+    clusterer.render()
     } catch (error) {
       console.error("Map markers error:", error)
     }
@@ -149,6 +369,11 @@ export function MapView({
   useEffect(() => {
     const markers = markersRef.current
     return () => {
+      try {
+        clustererRef.current?.clearMarkers()
+        ;(clustererRef.current as any)?.setMap?.(null)
+      } catch {}
+      clustererRef.current = null
       markers.forEach((marker) => {
         try {
           removeMarker(marker)
@@ -292,6 +517,12 @@ export function MapView({
   }, [mapsApiKey, mapId])
 
   useEffect(() => {
+    const selectedId = selectedLocation?.id ?? null
+    selectedIdRef.current = selectedId
+    markersRef.current.forEach((marker) => setPinSelected(marker, marker.__locationId === selectedId))
+  }, [selectedLocation, locations])
+
+  useEffect(() => {
     if (!map || !mapsLoaded || !selectedLocation) return
 
     const lat = Number(selectedLocation.latitude)
@@ -300,8 +531,7 @@ export function MapView({
     if (lat && lng) {
       hasUserInteracted.current = true
       try {
-        map.panTo({ lat, lng })
-        map.setZoom(13)
+        focusOnLocation(map, { lat, lng })
       } catch (error) {
         console.error("Map pan error:", error)
       }
@@ -315,6 +545,7 @@ export function MapView({
     const hasActiveFilters =
       activeFilters &&
       (activeFilters.type !== "all" ||
+        activeFilters.services?.length > 0 ||
         activeFilters.hasInventory ||
         activeFilters.deliveryAvailable ||
         activeFilters.hayTypes.length > 0 ||
@@ -422,7 +653,7 @@ export function MapView({
       <div id="map" className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute inset-x-3 top-2 bottom-16 sm:inset-x-4 md:inset-x-auto md:top-4 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
+        <div className="absolute inset-x-3 top-[40%] bottom-16 sm:inset-x-4 md:inset-x-auto md:top-4 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
         <LocationCard
           location={selectedLocation}
           onClose={() => onLocationSelect?.(null)}

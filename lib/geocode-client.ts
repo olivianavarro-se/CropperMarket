@@ -31,17 +31,13 @@ export async function geocodeAddressClient(
     }
 
     const fullAddress = `${address}, ${city}, ${state} ${zipCode}`
-    console.log("[v0] Client-side geocoding:", fullAddress)
 
     const geocoder = new window.google.maps.Geocoder()
 
     return new Promise((resolve) => {
       geocoder.geocode({ address: fullAddress }, (results: any, status: string) => {
-        console.log("[v0] Geocoding response:", { status, results })
-
         if (status === "OK" && results && results[0]) {
           if (results[0].partial_match) {
-            console.log("[v0] Geocoding rejected: partial match detected")
             resolve({
               success: false,
               latitude: null,
@@ -82,19 +78,12 @@ export async function geocodeAddressClient(
           const stateMatches = formattedState.toLowerCase() === state.toLowerCase()
           const zipMatches = formattedZip === zipCode
 
-          console.log("[v0] Address component validation:", {
-            userEntered: { city, state, zipCode },
-            googleFound: { city: formattedCity, state: formattedState, zipCode: formattedZip },
-            matches: { cityMatches, stateMatches, zipMatches },
-          })
-
           if (!cityMatches || !stateMatches || !zipMatches) {
             const mismatches = []
             if (!cityMatches) mismatches.push(`city (found: ${formattedCity})`)
             if (!stateMatches) mismatches.push(`state (found: ${formattedState})`)
             if (!zipMatches) mismatches.push(`ZIP code (found: ${formattedZip})`)
 
-            console.log("[v0] Geocoding rejected: address component mismatch")
             resolve({
               success: false,
               latitude: null,
@@ -103,15 +92,6 @@ export async function geocodeAddressClient(
             })
             return
           }
-
-          console.log("[v0] Geocoding successful with formatted address:", {
-            lat,
-            lng,
-            street: street.trim(),
-            city: formattedCity,
-            state: formattedState,
-            zipCode: formattedZip,
-          })
 
           resolve({
             success: true,
@@ -125,7 +105,6 @@ export async function geocodeAddressClient(
             },
           })
         } else {
-          console.log("[v0] Geocoding failed:", status)
           resolve({
             success: false,
             latitude: null,
@@ -136,7 +115,7 @@ export async function geocodeAddressClient(
       })
     })
   } catch (error) {
-    console.error("[v0] Geocoding error:", error)
+    console.error("Geocoding error:", error)
     return {
       success: false,
       latitude: null,
@@ -146,13 +125,37 @@ export async function geocodeAddressClient(
   }
 }
 
+// Pages without a map (e.g. the dashboard opened directly) never load the Maps script,
+// so inject the same script MapView uses; MapView reuses it when the key matches.
+function ensureGoogleMapsScript() {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!apiKey || (window as any).google?.maps) return
+  if (document.querySelector('script[src*="maps.googleapis.com"]')) return
+
+  const script = document.createElement("script")
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=marker&loading=async`
+  script.async = true
+  script.defer = true
+  document.head.appendChild(script)
+}
+
 // Helper to ensure Google Maps is loaded before geocoding
 export async function waitForGoogleMaps(maxWaitMs = 10000): Promise<boolean> {
   if (typeof window === "undefined") return false
 
+  ensureGoogleMapsScript()
   const startTime = Date.now()
 
-  while (!window.google?.maps?.Geocoder) {
+  while (!(window as any).google?.maps?.Geocoder) {
+    const maps = (window as any).google?.maps
+    if (maps?.importLibrary) {
+      try {
+        await maps.importLibrary("geocoding")
+        if ((window as any).google?.maps?.Geocoder) break
+      } catch {
+        // fall through to retry until timeout
+      }
+    }
     if (Date.now() - startTime > maxWaitMs) {
       return false
     }

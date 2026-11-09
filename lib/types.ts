@@ -58,6 +58,10 @@ export interface Location {
   latitude: number | null
   longitude: number | null
   delivery_available: boolean
+  offers_squeeze: boolean
+  offers_transport: boolean
+  squeeze_notes: string | null
+  transport_notes: string | null
   created_at: string
   updated_at: string
 }
