@@ -96,8 +96,8 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
   ].filter(Boolean) as { key: string; label: string; notes: string | null; Icon: typeof Truck; className: string }[]
 
   return (
-    <Card className="shadow-2xl border-0 overflow-hidden text-sm">
-      <CardHeader className="p-3 md:p-4 pb-2 md:pb-3 bg-card border-b border-hay-border">
+    <Card className="gap-0 py-0 shadow-xl border border-hay-border ring-4 ring-hay-gold/10 overflow-hidden text-sm">
+      <CardHeader className="p-4 [.border-b]:pb-3 bg-card border-b border-hay-border">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
             {supplier.logo_url && (
@@ -110,12 +110,12 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-base md:text-lg mb-0.5 truncate">{supplier.business_name}</CardTitle>
-              <p className="text-xs md:text-sm text-muted-foreground mb-1.5">{location.name}</p>
+              <CardTitle className="text-xl md:text-lg leading-tight mb-1 truncate">{supplier.business_name}</CardTitle>
+              <p className="text-sm text-muted-foreground mb-2">{location.name}</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge 
                   variant="outline" 
-                  className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 ${
+                  className={`text-xs px-1.5 md:px-2 py-0 md:py-0.5 ${
                     supplier.supplier_type === "broker" 
                       ? "bg-broker-bg border-broker-border text-broker shadow-sm" 
                       : "bg-grower-bg border-grower-border text-grower shadow-sm"
@@ -127,7 +127,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                   <Badge
                     key={key}
                     variant="outline"
-                    className={`text-[10px] md:text-xs px-1.5 md:px-2 py-0 md:py-0.5 shadow-sm ${className}`}
+                    className={`text-xs px-1.5 md:px-2 py-0 md:py-0.5 shadow-sm ${className}`}
                   >
                     {label}
                   </Badge>
@@ -141,9 +141,9 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2.5 md:space-y-3 p-3 md:p-4 pt-2.5 md:pt-3">
-        <div className="flex items-start gap-2 text-xs md:text-sm">
-          <MapPin className="h-3.5 w-3.5 mt-0.5 text-hay-gold shrink-0" />
+      <CardContent className="flex flex-col gap-3 p-4">
+        <div className="flex items-start gap-2 text-sm">
+          <MapPin className="h-4 w-4 mt-0.5 text-hay-gold shrink-0" />
           <div className="flex flex-col text-muted-foreground leading-relaxed">
             <span className="font-medium text-foreground">{location.address}</span>
             <span>
@@ -154,49 +154,49 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
 
         {isAuthenticated ? (
           supplier.email && (
-            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-              <Mail className="h-3.5 w-3.5 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4 shrink-0" />
               <span className="truncate">{supplier.email}</span>
             </div>
           )
         ) : (
-          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
-            <Lock className="h-3.5 w-3.5 shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
+            <Lock className="h-4 w-4 shrink-0" />
             <span className="italic">Sign in to view contact info</span>
           </div>
         )}
 
         {isAuthenticated ? (
           supplier.phone && (
-            <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground">
-              <Phone className="h-3.5 w-3.5 shrink-0" />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Phone className="h-4 w-4 shrink-0" />
               <span>{supplier.phone}</span>
             </div>
           )
         ) : (
-          <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
-            <Lock className="h-3.5 w-3.5 shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted p-1.5 md:p-2 rounded">
+            <Lock className="h-4 w-4 shrink-0" />
             <span className="italic">Sign in to view phone</span>
           </div>
         )}
 
         {services.length > 0 && (
           <div className="border-t border-hay-border pt-2.5 md:pt-3 flex flex-col gap-2">
-            <h3 className="font-semibold text-xs md:text-sm">Services</h3>
+            <h3 className="font-semibold text-sm">Services</h3>
             {services.map(({ key, label, notes, Icon, className }) => (
-              <div key={key} className={`flex items-start gap-2 p-2 md:p-2.5 rounded-lg border ${className}`}>
+              <div key={key} className={`flex items-start gap-2 p-3 rounded-lg border ${className}`}>
                 <Icon className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-xs md:text-sm">{label}</div>
+                  <div className="font-medium text-sm">{label}</div>
                   {notes && (
-                    <p className="text-xs text-foreground/80 mt-0.5 leading-relaxed whitespace-pre-line break-words">
+                    <p className="text-sm text-foreground/80 mt-0.5 leading-relaxed whitespace-pre-line break-words">
                       {notes}
                     </p>
                   )}
                 </div>
               </div>
             ))}
-            <p className="text-[11px] md:text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               {isAuthenticated
                 ? `Call ${supplier.phone ? supplier.phone : supplier.business_name} to book a service.`
                 : "Sign in to see the phone number and book a service."}
@@ -208,7 +208,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
         <div className="border-t border-hay-border pt-2.5 md:pt-3">
           <div className="flex items-center gap-1.5 mb-2">
             <Package className="h-3.5 w-3.5 text-hay-gold" />
-            <h3 className="font-semibold text-xs md:text-sm">Inventory</h3>
+            <h3 className="font-semibold text-sm">Inventory</h3>
             {location.delivery_available && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto bg-grower-bg border-grower-border text-grower">
                 Delivery
@@ -228,16 +228,16 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                 return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-2 md:p-2.5 rounded-lg border bg-muted/50 border-border hover:shadow-sm transition-shadow"
+                  className="flex items-center justify-between p-3 rounded-lg border bg-muted/50 border-border hover:shadow-sm transition-shadow"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
+                    <div className="font-medium text-sm truncate">{item.product_name}</div>
                     {item.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
+                          <p className="text-sm text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
                             {item.description}
                           </p>
                         )}
-                    <div className="text-[10px] md:text-xs text-muted-foreground mt-0.5">
+                    <div className="text-xs text-muted-foreground mt-0.5">
                       {item.quantity} {getStockUnitLabel(item.stock_unit || "tons")} in stock
                     </div>
                   </div>
@@ -246,15 +246,15 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
                       <div className="space-y-0.5">
                         {item.pricing_options.map((option, idx) => (
                           <div key={idx} className="text-right">
-                            <div className="font-semibold text-xs md:text-sm text-hay-dark">${option.price}</div>
-                            <div className="text-[10px] md:text-xs text-muted-foreground">{getSellingUnitLabel(option.unit)}</div>
+                            <div className="font-semibold text-base text-hay-dark">${option.price}</div>
+                            <div className="text-xs text-muted-foreground">{getSellingUnitLabel(option.unit)}</div>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <>
-                        <div className="font-semibold text-xs md:text-sm text-hay-dark">${item.price_per_unit}</div>
-                        <div className="text-[10px] md:text-xs text-muted-foreground">{getSellingUnitLabel(item.selling_unit || "tons")}</div>
+                        <div className="font-semibold text-base text-hay-dark">${item.price_per_unit}</div>
+                        <div className="text-xs text-muted-foreground">{getSellingUnitLabel(item.selling_unit || "tons")}</div>
                       </>
                     )}
                   </div>
@@ -271,7 +271,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
         {!isOwnFarm && (sellsHay || !isAuthenticated) && (
           <Button
             size="sm"
-            className="w-full shadow-md hover:shadow-lg transition-all h-8 md:h-9 text-xs md:text-sm bg-hay-dark hover:bg-hay-dark-hover text-white"
+            className="w-full shadow-md hover:shadow-lg transition-all h-10 md:h-9 text-sm bg-hay-dark hover:bg-hay-dark-hover text-white"
             onClick={handleContactClick}
           >
             {!isAuthenticated ? (
