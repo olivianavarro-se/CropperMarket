@@ -51,7 +51,7 @@ export default async function Home() {
   })
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
+    <div className="fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] flex flex-col overflow-hidden md:bottom-0">
       <Header />
       <main className="flex-1 relative overflow-hidden">
         <HomeMapView 
