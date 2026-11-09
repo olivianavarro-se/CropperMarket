@@ -66,16 +66,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
     })
   }, [location.inventory, activeFilters])
 
-  // Always list every hay type the farm has; when filters narrow things down, matches go first and get a tag.
   const isNarrowed = filteredInventory.length < location.inventory.length
-  const matchedIds = useMemo(() => new Set(filteredInventory.map((item) => item.id)), [filteredInventory])
-  const displayedInventory = useMemo(
-    () =>
-      isNarrowed
-        ? [...location.inventory].sort((a, b) => Number(matchedIds.has(b.id)) - Number(matchedIds.has(a.id)))
-        : location.inventory,
-    [location.inventory, matchedIds, isNarrowed],
-  )
 
   const handleContactClick = () => {
     if (!isAuthenticated) {
@@ -227,30 +218,20 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
 
           {isNarrowed && (
             <p className="text-[11px] text-muted-foreground mb-2">
-              {filteredInventory.length} of {location.inventory.length} match your filters
+              Showing {filteredInventory.length} of {location.inventory.length} hay types that match your filters
             </p>
           )}
 
-          {displayedInventory.length > 0 ? (
+          {filteredInventory.length > 0 ? (
             <div className="space-y-1.5 md:space-y-2">
-              {displayedInventory.map((item) => {
-                const isMatch = isNarrowed && matchedIds.has(item.id)
+              {filteredInventory.map((item) => {
                 return (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between p-2 md:p-2.5 rounded-lg border hover:shadow-sm transition-shadow ${
-                    isMatch ? "bg-hay-gold/10 border-hay-gold/50" : "bg-muted/50 border-border"
-                  }`}
+                  className="flex items-center justify-between p-2 md:p-2.5 rounded-lg border bg-muted/50 border-border hover:shadow-sm transition-shadow"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-medium text-xs md:text-sm truncate">{item.product_name}</span>
-                      {isMatch && (
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-hay-gold/60 text-hay-dark">
-                          Matches filter
-                        </Badge>
-                      )}
-                    </div>
+                    <div className="font-medium text-xs md:text-sm truncate">{item.product_name}</div>
                     {item.description && (
                           <p className="text-xs text-muted-foreground mt-0.5 italic leading-relaxed whitespace-pre-line break-words">
                             {item.description}

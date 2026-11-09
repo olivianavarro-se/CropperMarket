@@ -172,6 +172,7 @@
 [data-pin-label] {
   display: none;
 }
-.show-pin-labels [data-pin-label] {
+.show-pin-labels [data-pin-label],
+[data-pin-selected] [data-pin-label] {
   display: inline-block;
 }

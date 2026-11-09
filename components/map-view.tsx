@@ -41,7 +41,13 @@ function buildPinElement(items: { offering: Offering; color: string }[], name: s
   wrapper.style.alignItems = "center"
   wrapper.style.filter = "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
 
+  wrapper.style.transition = "transform 150ms ease"
+  wrapper.style.transformOrigin = "bottom center"
+
   const pill = document.createElement("div")
+  pill.setAttribute("data-pin-pill", "")
+  pill.style.border = "2px solid #ffffff"
+  pill.style.transition = "border-color 150ms ease"
   pill.style.display = "flex"
   pill.style.alignItems = "center"
   pill.style.gap = "2px"
@@ -95,11 +101,16 @@ const CLUSTER_MAX_ZOOM = 13
 // Past the clustering level, so a selected farm always shows as its own pin with its name.
 const SELECTED_ZOOM = CLUSTER_MAX_ZOOM + 2
 
-// On desktop the details panel covers the right side of the map, so shift the view to keep the pin beside it.
+// The details panel covers part of the map (bottom 60% on mobile, right side on desktop),
+// so shift the view to keep the pin in the visible area.
 function focusOnLocation(map: any, position: { lat: number; lng: number }) {
   map.setZoom(SELECTED_ZOOM)
   map.setCenter(position)
-  if (window.innerWidth < 768) return
+  if (window.innerWidth < 768) {
+    const mapHeight = (map.getDiv() as HTMLElement).clientHeight
+    map.panBy(0, mapHeight * 0.3)
+    return
+  }
   const panelWidth = window.innerWidth >= 1024 ? 420 : 380
   map.panBy((panelWidth + 16) / 2, 0)
 }
@@ -159,6 +170,23 @@ function createClusterRenderer(useAdvanced: boolean): Renderer {
   }
 }
 
+// Selected farm: dark outline, slightly larger, name always visible, drawn above nearby pins.
+function setPinSelected(marker: any, selected: boolean) {
+  const baseZ = marker.__baseZIndex ?? 1
+  const wrapper = marker.__pinElement as HTMLElement | undefined
+  if (wrapper) {
+    wrapper.style.transform = selected ? "scale(1.15)" : "scale(1)"
+    wrapper.toggleAttribute("data-pin-selected", selected)
+    const pill = wrapper.querySelector<HTMLElement>("[data-pin-pill]")
+    const tail = wrapper.lastElementChild as HTMLElement | null
+    if (pill) pill.style.borderColor = selected ? CLUSTER_INK : "#ffffff"
+    if (tail) tail.style.borderTopColor = selected ? CLUSTER_INK : "#ffffff"
+    marker.zIndex = selected ? 5000 : baseZ
+  } else if (typeof marker.setZIndex === "function") {
+    marker.setZIndex(selected ? 5000 : baseZ)
+  }
+}
+
 function removeMarker(marker: any) {
   if (typeof marker.setMap === "function") marker.setMap(null)
   else marker.map = null
@@ -180,6 +208,7 @@ export function MapView({
   const markersRef = useRef<Map<string, any>>(new Map())
   const clustererRef = useRef<MarkerClusterer | null>(null)
   const onLocationSelectRef = useRef(onLocationSelect)
+  const selectedIdRef = useRef<string | null>(selectedLocation?.id ?? null)
   const hasUserInteracted = useRef(false)
   const prevUserLocation = useRef<{ lat: number; lng: number } | null>(null)
   const prevFiltersActive = useRef(false)
@@ -287,6 +316,7 @@ export function MapView({
         const AdvancedMarkerElement = (window.google.maps as any).marker.AdvancedMarkerElement
         const pinElement = buildPinElement(getPinItems(location), location.supplier.business_name)
         marker = new AdvancedMarkerElement({ position, title, content: pinElement, zIndex: isMulti ? 2 : 1 })
+        marker.__pinElement = pinElement
         pinElement.addEventListener("click", handleClick)
       } else {
         marker = new window.google.maps.Marker({
@@ -308,6 +338,9 @@ export function MapView({
         marker.addListener("click", handleClick)
       }
 
+      marker.__baseZIndex = isMulti ? 2 : 1
+      marker.__locationId = location.id
+      if (location.id === selectedIdRef.current) setPinSelected(marker, true)
       markersRef.current.set(id, marker)
       clusterer.addMarker(marker, true)
     })
@@ -476,6 +509,12 @@ export function MapView({
   }, [mapsApiKey, mapId])
 
   useEffect(() => {
+    const selectedId = selectedLocation?.id ?? null
+    selectedIdRef.current = selectedId
+    markersRef.current.forEach((marker) => setPinSelected(marker, marker.__locationId === selectedId))
+  }, [selectedLocation, locations])
+
+  useEffect(() => {
     if (!map || !mapsLoaded || !selectedLocation) return
 
     const lat = Number(selectedLocation.latitude)
@@ -606,7 +645,7 @@ export function MapView({
       <div id="map" className="w-full h-full" />
 
       {selectedLocation && (
-        <div className="absolute inset-x-3 top-2 bottom-16 sm:inset-x-4 md:inset-x-auto md:top-4 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
+        <div className="absolute inset-x-3 top-[40%] bottom-16 sm:inset-x-4 md:inset-x-auto md:top-4 md:bottom-4 md:right-4 md:w-[380px] lg:w-[420px] overflow-y-auto z-10 rounded-xl">
         <LocationCard
           location={selectedLocation}
           onClose={() => onLocationSelect?.(null)}
