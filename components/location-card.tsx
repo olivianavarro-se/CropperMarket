@@ -110,7 +110,7 @@ export function LocationCard({ location, onClose, isAuthenticated = false, activ
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <CardTitle className="text-xl md:text-lg leading-tight mb-1 truncate">{supplier.business_name}</CardTitle>
+              <CardTitle className="text-[19px] md:text-lg leading-tight mb-1 truncate">{supplier.business_name}</CardTitle>
               <p className="text-sm text-muted-foreground mb-2">{location.name}</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge 

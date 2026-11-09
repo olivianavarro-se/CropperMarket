@@ -3,6 +3,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Desktop layout only on computer-sized screens that aren't touch-first; tablets (iPads) get the phone layout.
+   Keep in sync with DESKTOP_MEDIA_QUERY in lib/breakpoints.ts. */
+@custom-variant md (@media (min-width: 64rem) and (not (pointer: coarse)));
+
 /* HayResource Marketplace - Warm hay/golden color scheme */
 :root {
   /* New HayCropper color palette based on provided brand colors */
