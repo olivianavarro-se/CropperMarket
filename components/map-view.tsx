@@ -47,7 +47,7 @@ function buildPinElement(items: { offering: Offering; color: string }[], name: s
   const pill = document.createElement("div")
   pill.setAttribute("data-pin-pill", "")
   pill.style.border = "2px solid #ffffff"
-  pill.style.transition = "border-color 150ms ease"
+  pill.style.transition = "border-color 150ms ease, box-shadow 150ms ease"
   pill.style.display = "flex"
   pill.style.alignItems = "center"
   pill.style.gap = "2px"
@@ -170,7 +170,11 @@ function createClusterRenderer(useAdvanced: boolean): Renderer {
   }
 }
 
-// Selected farm: dark outline, slightly larger, name always visible, drawn above nearby pins.
+// Matches the app's --primary golden-hay token.
+const SELECTED_GOLD = "#E3A33B"
+const SELECTED_HALO = "0 0 0 4px rgba(227, 163, 59, 0.3), 0 4px 12px rgba(120, 80, 20, 0.25)"
+
+// Selected farm: golden outline with a soft halo, slightly larger, name always visible, drawn above nearby pins.
 function setPinSelected(marker: any, selected: boolean) {
   const baseZ = marker.__baseZIndex ?? 1
   const wrapper = marker.__pinElement as HTMLElement | undefined
@@ -179,8 +183,12 @@ function setPinSelected(marker: any, selected: boolean) {
     wrapper.toggleAttribute("data-pin-selected", selected)
     const pill = wrapper.querySelector<HTMLElement>("[data-pin-pill]")
     const tail = wrapper.lastElementChild as HTMLElement | null
-    if (pill) pill.style.borderColor = selected ? CLUSTER_INK : "#ffffff"
-    if (tail) tail.style.borderTopColor = selected ? CLUSTER_INK : "#ffffff"
+    if (pill) {
+      if (pill.dataset.baseShadow === undefined) pill.dataset.baseShadow = pill.style.boxShadow
+      pill.style.borderColor = selected ? SELECTED_GOLD : "#ffffff"
+      pill.style.boxShadow = selected ? SELECTED_HALO : pill.dataset.baseShadow
+    }
+    if (tail) tail.style.borderTopColor = selected ? SELECTED_GOLD : "#ffffff"
     marker.zIndex = selected ? 5000 : baseZ
   } else if (typeof marker.setZIndex === "function") {
     marker.setZIndex(selected ? 5000 : baseZ)
