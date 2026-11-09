@@ -4,6 +4,7 @@ import { Header } from "@/components/header"
 import { SetupSupplierProfile } from "@/components/setup-supplier-profile"
 import { DashboardTabs } from "@/components/dashboard-tabs"
 import { BuyerDashboardTabs } from "@/components/buyer-dashboard-tabs"
+import type { LocationWithInventory, Supplier } from "@/lib/types"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -28,8 +29,8 @@ export default async function DashboardPage() {
   }
 
   // For suppliers, get supplier info and locations
-  let supplier = null
-  let locations: any[] = []
+  let supplier: Supplier | null = null
+  let locations: LocationWithInventory[] = []
   
   if (isSupplier) {
     const { data: supplierData } = await supabase.from("suppliers").select("*").eq("user_id", user.id).maybeSingle()

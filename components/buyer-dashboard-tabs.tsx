@@ -43,7 +43,7 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
     }, 3000)
 
     return () => clearTimeout(timer)
-  }, [activeTab, newOrdersCount, userId])
+  }, [activeTab, newOrdersCount, userId, supabase])
 
   useEffect(() => {
     const fetchNewOrdersCount = async () => {
@@ -93,7 +93,7 @@ export function BuyerDashboardTabs({ userId }: BuyerDashboardTabsProps) {
     return () => {
       channel.unsubscribe()
     }
-  }, [userId])
+  }, [userId, supabase])
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-6">

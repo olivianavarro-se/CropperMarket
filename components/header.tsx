@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { useEffect, useState, useRef } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import Image from "next/image"
+import type { User } from "@supabase/supabase-js"
+import type { Profile } from "@/lib/types"
 
 export function Header() {
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const userIdRef = useRef<string | null>(null)
-  const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
 
@@ -106,7 +107,7 @@ export function Header() {
         (payload) => {
           // Update profile if it matches current user
           if (isMounted && payload.new && userIdRef.current === payload.new.id) {
-            setProfile(payload.new)
+            setProfile(payload.new as Profile)
           }
         },
       )
@@ -117,14 +118,8 @@ export function Header() {
       subscription.unsubscribe()
       profileChannel.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push("/")
-  }
-
-  const isHomePage = pathname === "/"
   const isActive = (path: string) => pathname === path
 
   return (

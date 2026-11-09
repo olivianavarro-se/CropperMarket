@@ -9,7 +9,6 @@ import type { Supplier, Location, Inventory } from "@/lib/types"
 import { SupplierProfile } from "@/components/supplier-profile"
 import { LocationList } from "@/components/location-list"
 import { SupplierOrdersWrapper } from "@/components/supplier-orders-wrapper"
-import { SupplierOrders } from "@/components/supplier-orders" // Import SupplierOrders component
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 
@@ -81,7 +80,7 @@ export function DashboardTabs({ supplier, userId, locations }: DashboardTabsProp
       window.removeEventListener("supplier-orders-changed", fetchPendingCount)
       channel.unsubscribe()
     }
-  }, [supplier.id])
+  }, [supplier.id, supabase])
 
   return (
     <div className="flex flex-col md:flex-row gap-4 md:gap-6">
