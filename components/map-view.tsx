@@ -442,7 +442,10 @@ export function MapView({
           center: initialCenter,
           zoom: initialZoom,
           streetViewControlOptions: {
-            position: window.google.maps.ControlPosition.RIGHT_TOP,
+            // The desktop detail panel covers the right edge of the map, so keep the control on the left there.
+        position: isDesktopViewport()
+          ? window.google.maps.ControlPosition.LEFT_TOP
+          : window.google.maps.ControlPosition.RIGHT_TOP,
           },
         }
 
