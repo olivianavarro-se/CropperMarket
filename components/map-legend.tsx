@@ -1,5 +1,8 @@
 "use client"
 
+import { OfferingIcon } from "@/components/offering-icon"
+import { PIN_COLORS, type Offering } from "@/lib/location-services"
+
 type ServiceKey = "squeeze" | "transport"
 
 interface MapLegendProps {
@@ -10,19 +13,20 @@ interface MapLegendProps {
   compact?: boolean
 }
 
-const CHIPS = [
-  { key: "grower", label: "Grower", dot: "bg-grower", active: "bg-grower-bg border-grower" },
-  { key: "broker", label: "Broker", dot: "bg-broker", active: "bg-broker-bg border-broker" },
-  { key: "squeeze", label: "Squeeze", dot: "bg-squeeze", active: "bg-squeeze-bg border-squeeze" },
-  { key: "transport", label: "Transport", dot: "bg-transport", active: "bg-transport-bg border-transport" },
-] as const
+const CHIPS: { key: keyof typeof PIN_COLORS; label: string; offering: Offering }[] = [
+  { key: "grower", label: "Grower", offering: "hay" },
+  { key: "broker", label: "Broker", offering: "hay" },
+  { key: "squeeze", label: "Squeeze", offering: "squeeze" },
+  { key: "transport", label: "Transport", offering: "transport" },
+]
 
 export function MapLegend({ type, services, onTypeChange, onToggleService, compact = false }: MapLegendProps) {
   return (
-    <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`} role="group" aria-label="Filter by pin color">
+    <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`} role="group" aria-label="Filter by pin type">
       {CHIPS.map((chip) => {
         const isType = chip.key === "grower" || chip.key === "broker"
         const pressed = isType ? type === chip.key : services.includes(chip.key as ServiceKey)
+        const color = PIN_COLORS[chip.key]
         const handleClick = () => {
           if (isType) onTypeChange(pressed ? "all" : (chip.key as "grower" | "broker"))
           else onToggleService(chip.key as ServiceKey)
@@ -33,11 +37,12 @@ export function MapLegend({ type, services, onTypeChange, onToggleService, compa
             type="button"
             aria-pressed={pressed}
             onClick={handleClick}
-            className={`flex items-center rounded-full border font-semibold text-foreground transition-colors ${
-              compact ? "gap-1 px-2 py-0.5 text-[10px]" : "gap-2 px-3 py-1.5 text-xs"
-            } ${pressed ? chip.active : "bg-card border-border hover:bg-muted"}`}
+            className={`flex items-center rounded-full border font-semibold transition-colors ${
+              compact ? "gap-1 py-0.5 pl-0.5 pr-2 text-[11px]" : "gap-1.5 py-0.5 pl-0.5 pr-3 text-xs"
+            } ${pressed ? "text-card" : "border-hay-border bg-card text-foreground hover:border-hay-warm"}`}
+            style={pressed ? { backgroundColor: color, borderColor: color } : undefined}
           >
-            <span className={`rounded-full ${chip.dot} ${compact ? "w-2 h-2" : "w-2.5 h-2.5"}`} aria-hidden="true" />
+            <OfferingIcon offering={chip.offering} color={color} size={compact ? "sm" : "md"} inverted={pressed} />
             {chip.label}
           </button>
         )
