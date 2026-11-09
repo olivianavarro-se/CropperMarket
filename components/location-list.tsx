@@ -471,7 +471,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
       </div>
 
       {isAddingLocation && (
-        <Card className="border-2 border-primary/20 bg-primary/5">
+        <Card className="border bg-card shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MapPin className="h-5 w-5" />
@@ -823,7 +823,7 @@ export function LocationList({ locations, supplierId }: LocationListProps) {
                       )}
 
                       {addingInventoryToLocation === location.id ? (
-                        <Card className="border-2 border-primary/20 bg-primary/5">
+                        <Card className="border bg-card shadow-sm">
                           <CardContent className="pt-6">
                             <form onSubmit={(e) => handleAddInventory(e, location.id)} className="space-y-4">
                               <div className="grid gap-4">

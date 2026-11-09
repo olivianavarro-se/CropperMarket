@@ -37,7 +37,7 @@ export function LocationServicesFields({ idPrefix, value, onChange }: LocationSe
   const update = (patch: Partial<LocationServicesValue>) => onChange({ ...value, ...patch })
 
   return (
-    <fieldset className="flex flex-col gap-3 p-4 bg-card rounded-lg border">
+    <fieldset className="flex flex-col gap-3 p-4 bg-secondary/60 rounded-lg border border-border/60">
       <legend className="sr-only">Services offered from this location</legend>
       <div>
         <p className="text-sm font-medium">Services offered from this location</p>
